@@ -1,0 +1,3169 @@
+---
+title: "Modelación y gestión de riesgos financieros"
+subtitle: "Mercados, instrumentos, retornos y primeras ideas de riesgo"
+author: "Orlando Joaqui-Barandica"
+institute: "Universidad del Valle"
+date: " "
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    css: 
+      - default
+      - rladies
+      - rladies-fonts
+      - fonts_mtheme.css
+      - sidney.css
+    seal: false  
+    nature: 
+      ratio: 16:9
+      beforeInit: "macros.js"
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+
+---
+
+
+
+```{r setup, include = FALSE}
+library(knitr)
+library(tidyverse)
+library(knitr)                              
+library(shiny)
+library(tidyquant)
+library(slider)
+library(scales)
+library(moments)
+
+# opciones predeterminadas
+knitr::opts_chunk$set(echo = FALSE,         # FALSE: los bloques de código NO se muestran
+                      dpi = 300,            # asegura gráficos de alta resolución
+                      warning = FALSE,      # los mensajes de advertencia NO se muestran
+                      error = FALSE)        # los mensajes de error NO se muestran
+
+
+options(htmltools.dir.version = FALSE)
+```
+
+
+
+
+class: inverse, left, bottom
+background-image: url("img/fondo.jpg")
+background-size: cover
+
+
+# **`r rmarkdown::metadata$title`**
+----
+
+## **`r rmarkdown::metadata$subtitle`**
+
+### `r rmarkdown::metadata$author`
+### `r rmarkdown::metadata$date`
+
+
+
+
+```{r xaringanExtra-share-again, echo=FALSE}
+xaringanExtra::use_share_again()
+```
+
+```{r xaringanExtra-clipboard, echo=FALSE}
+xaringanExtra::use_clipboard()
+```
+
+
+
+---
+
+
+
+class: center, middle
+
+
+
+
+
+```{r, echo=FALSE, fig.align="center", out.width="20%"}
+knitr::include_graphics("img/univalle.jpg")
+```
+
+
+
+---
+
+
+
+
+
+
+class: center, middle
+
+
+.center[
+
+<br>
+
+
+
+<a href="https://www.joaquibarandica.com" target="_blank">
+  <img src="img/avatar.png"
+       style="border-radius: 80%; width: 220px; max-width: 30%; height: auto;"
+       alt="Avatar"/>
+</a>
+
+
+## Orlando Joaqui-Barandica
+
+
+Doctor en Ingeniería, Enf. Ingeniería Industrial **|** Magíster en Economía Aplicada **|** Estadístico.
+
+
+
+`r anicon::faa("envelope", animate = "passing")` orlando.joaqui@correounivalle.edu.co 
+]
+
+
+
+.center[
+### [www.joaquibarandica.com](https://www.joaquibarandica.com)
+]
+
+
+
+
+
+
+---
+
+class: center, middle, inverse
+
+# Mercados, instrumentos, retornos y primeras ideas de riesgo
+
+### Modelación y gestión de riesgos financieros
+
+---
+
+# Mapa
+
+.pull-left[
+### La ruta
+
+1. Qué se negocia en los mercados  
+2. Qué riesgo aparece según el instrumento  
+3. Qué es un factor de riesgo  
+4. Por qué en finanzas se trabaja tanto con retornos  
+5. Primer aterrizaje en R con datos reales
+]
+
+.pull-right[
+### La idea de fondo
+
+Antes de hablar de VaR, ES, GARCH o backtesting, conviene tener clara una cosa:
+
+.orange[**qué objeto financiero tengo al frente?, qué lo mueve? y cómo se traduce eso en pérdidas o ganancias?.**]
+]
+
+---
+
+# Una pregunta simple
+
+.pull-left[
+### Caso 1
+
+Un activo gana 8% en el año.
+
+### Caso 2
+
+Otro activo también gana 8% en el año.
+]
+
+.pull-right[
+### La pregunta no es el promedio
+
+Lo primero no es preguntar:
+
+**“¿cuánto rentó?”**
+
+Sino también:
+
+- cuánto osciló,
+- qué tan feos fueron sus malos días,
+- qué variable lo mueve,
+- qué tan fácil es salir de la posición,
+- y si ese riesgo se puede cubrir o no.
+]
+
+---
+
+# ¿Qué se gestiona cuando se habla de riesgo?
+
+.pull-left[
+### En apariencia
+
+Se gestiona un activo, un portafolio, una posición o una mesa.
+]
+
+.pull-right[
+### En el fondo
+
+Se gestionan **exposiciones**.
+
+No se controla el mercado.  
+No se controla la noticia.  
+No se controla la tasa, ni el dólar, ni el petróleo.
+
+Lo que sí se puede hacer es:
+
+- identificar qué me afecta,
+- medir cuánto me afecta,
+- y decidir cómo convivir con eso.
+]
+
+---
+
+# ¿Qué se gestiona cuando se habla de riesgo?
+
+<br>
+
+> .orange[**Exposición:**] se refiere a la sensibilidad que tiene tu patrimonio ante los movimientos de variables que tú no controlas.
+
+
+### 1. La diferencia entre el .orange[Objeto] y la .orange[Exposición]
+
+- El Objeto: Es lo que ves en tu cuenta (ej. 100 acciones de Apple o 1,000 barriles de petróleo).
+
+- La Exposición: Es el vínculo real entre ese objeto y el riesgo. Es responder a la pregunta: *¿Qué tanto me duele si esto se mueve?*
+
+
+---
+
+
+# ¿Qué se gestiona cuando se habla de riesgo?
+
+<br>
+
+### 2. Los componentes de la exposición
+
+> Para entender la exposición, los gestores de riesgo miran tres dimensiones:
+
+
+--
+
+- **Direccionalidad:** Si el precio del dólar sube y tú tienes deudas en dólares, tu exposición es negativa (te perjudica). Si tienes ahorros en dólares, tu exposición es positiva (te beneficia).
+
+--
+
+- **Magnitud (Sensibilidad):** No es solo "qué tengo", sino cuánto cambia mi valor por cada movimiento del mercado. En finanzas técnicas, esto se mide con indicadores como:
+
+    * Beta: Sensibilidad frente al mercado accionario.
+    * Duración: Sensibilidad frente a cambios en las tasas de interés.
+    * Griegas (Delta, Gamma, etc.): Sensibilidades en el mundo de las opciones.
+--
+
+- **Probabilidad:** La frecuencia con la que ese riesgo puede materializarse.
+
+
+---
+
+
+
+# ¿Qué se gestiona cuando se habla de riesgo?
+
+<br>
+
+### 3. ¿Por qué se dice que "se gestiona la exposición"?
+
+
+> Tú no puedes llamar al Banco Central para que no suba la tasa, ni puedes detener una guerra que afecte al petróleo. **El mercado es externo.**
+
+
+
+Lo único que puedes manipular es tu relación con esos eventos:
+
+- .orange[Si la exposición es muy alta:] Vendes una parte (reduces tamaño) o compras un seguro (cobertura/hedging).
+
+- .orange[Si la exposición es baja:] Puedes permitirte ignorar la volatilidad momentánea.
+
+
+---
+
+class: center, middle, inverse
+
+# 1. Riesgos, Mercados e instrumentos
+
+---
+
+# Instrumentos financieros
+
+.pull-left[
+### Una forma sencilla de verlo
+
+Un instrumento financiero es un contrato o una posición que tiene valor económico.
+
+Puede representar:
+
+- propiedad,
+- deuda,
+- derecho,
+- obligación,
+- o una apuesta sobre otra variable.
+]
+
+.pull-right[
+### Ejemplos
+
+- una acción,
+- un bono,
+- un ETF,
+- un forward,
+- una opción,
+- un swap.
+
+La clave no es memorizar la lista.
+
+La clave es entender que **cada instrumento trae una forma distinta de riesgo**.
+]
+
+---
+
+# On balance y off balance
+
+<br>
+
+.center[.orange["Imaginen que gestionar riesgo es como administrar una casa.]]
+
+<br>
+
+.center[Lo que está **On-Balance** es lo que ya tengo en el garaje: el carro, la herramienta, el efectivo en la caja fuerte. Si el precio de los carros cae, mi riqueza cae hoy mismo.]
+
+<br>
+----
+
+<br>
+.center[Pero lo **Off-Balance** es el contrato de seguro que firmé o la promesa de comprarle el carro al vecino el próximo mes. No está en mi garaje todavía, pero si el mercado se mueve, esa 'promesa' puede valer oro o ser un problema.]
+
+
+
+---
+# On balance y off balance
+
+.pull-left[
+### On balance
+
+Suelen aparecer en balance o están más cerca del activo “directo”.
+
+Ejemplos:
+
+- acciones,
+- bonos,
+- préstamos,
+- caja,
+- commodities físicos.
+]
+
+.pull-right[
+### Off balance
+
+No siempre aparecen como un activo tradicional en balance.
+
+Son más bien contratos contingentes.
+
+Ejemplos:
+
+- forwards,
+- futures,
+- opciones,
+- swaps.
+]
+
+---
+
+# ¿Para qué existen?
+
+.pull-left[
+### No todo es especulación
+
+Los instrumentos no nacen solo para “apostar”.
+]
+
+.pull-right[
+### Usos típicos
+
+* **Financiación:** Emitir deuda o acciones para captar capital.
+* **Inversión:** Colocar excedentes buscando un retorno.
+* **Cobertura (Hedging):** Reducir o eliminar una exposición existente.
+* **Diversificación:** Combinar diferentes riesgos para reducir la volatilidad global.
+* **Seguro:** Pagar una prima para estar protegido ante eventos adversos.
+]
+
+
+
+.center[.orange[Ya vimos el porqué usamos estos instrumentos. Pero para gestionarlos, hay que entender qué estamos manipulando realmente. No siempre estamos comprando 'cosas'; a veces estamos comprando solo 'movimientos']. 
+
+Aquí es donde diferenciamos el activo, el derivado y la exposición.]
+
+---
+
+# Activo, derivado y exposición
+
+.pull-left[
+### Activo “directo” = Propiedad
+
+
+Es la propiedad del objeto real (**Subyacente**).
+* **Ejemplos:** Acciones, bonos, oro físico, divisas en caja.
+* **Relación:** Lineal (si el precio sube 1%, tu valor sube 1%).
+
+
+Si compro una acción, me expongo de forma directa al precio de esa empresa.
+
+* Compras la acción $\rightarrow$ **Eres dueño**.
+* Si el precio sube 5%, tu riqueza sube 5%. Simple.
+
+]
+
+.pull-right[
+### Derivado
+
+> Es un **contrato** cuyo valor depende de un activo base.
+> * Ejemplos: Forwards, Futuros, Opciones, Swaps.
+
+.orange[Si compro una opción sobre una acción, no estoy comprando la acción como tal. Estoy comprando una **exposición condicionada** al comportamiento del subyacente.]
+
+* Compras una opción $\rightarrow$ **Tienes un derecho**.
+* No te importa la empresa, te importa el **comportamiento** de su precio.
+* Es una **exposición condicionada**: "Solo me afecta si el precio pasa de $X$".
+]
+
+
+
+---
+
+# Instrumento vs. Exposición
+
+
+<br>
+
+> .orange[**Regla de oro del gestor:**]
+> El **instrumento** es la envoltura; la **exposición** es lo que realmente te puede quebrar o hacer ganar.
+
+
+
+
+Esta es la idea más importante en la gestión de riesgos: **El instrumento y la exposición no siempre son lo mismo.**
+
+* **El Subyacente:** Es el protagonista (ej. el precio del Petróleo). Es lo que le da sentido a todo.
+* **El Instrumento:** Es el vehículo legal (ej. una Opción de compra).
+* **La Exposición:** Es la sensibilidad real de tu bolsillo ante el subyacente.
+
+--
+
+### ¿Por qué importa la distinción?
+
+1. **En el Activo Directo:** Tienes la cosa (propiedad).
+2. **En el Derivado:** Tienes el movimiento (derecho/obligación).
+
+<br>
+
+> .orange[**Reflexión:**] Gestionar riesgo no es solo contar cuántos contratos tienes, sino medir cuánto te afecta que el **subyacente** se mueva, aunque no seas "dueño" de él.
+
+
+
+---
+
+# Tipos de riesgo
+
+.pull-left[
+### Riesgos muy nombrados
+
+- riesgo de mercado  
+- riesgo de crédito  
+- riesgo de liquidez  
+- riesgo operacional
+]
+
+.pull-right[
+### Otros que aparecen mucho en finanzas
+
+- riesgo de tasa de interés  
+- riesgo cambiario  
+- riesgo de commodity  
+- riesgo de contraparte  
+- riesgo de modelo
+]
+
+---
+
+
+# Tipos de riesgo
+
+No todos los riesgos “se sienten” igual.  
+Algunos te pegan porque **el mercado se mueve**, otros porque **alguien no paga**, otros porque **no puedes salir**, y otros porque **la operación por dentro falla**.
+
+.center[.orange[La gestión del riesgo empieza cuando uno deja de ver la palabra “riesgo” como una sola cosa y empieza a separar sus apellidos.]]
+
+---
+
+# Mapa rápido
+
+| Gran familia | Pregunta simple |
+|:--|:--|
+| **Mercado** | ¿Qué pasa si el precio, la tasa, el dólar o la volatilidad se mueven? |
+| **Crédito** | ¿Qué pasa si la otra parte no paga? |
+| **Liquidez** | ¿Qué pasa si sí quiero salir, pero no puedo salir bien? |
+| **Operacional** | ¿Qué pasa si el problema no es el mercado sino el proceso? |
+| **Contraparte** | ¿Qué pasa si mi socio financiero falla en el contrato? |
+| **Modelo** | ¿Qué pasa si estoy midiendo mal y ni cuenta me doy? |
+
+<br>
+
+> .orange[**Idea clave:**] varios de estos riesgos pueden aparecer **al mismo tiempo** sobre la misma posición.
+
+<br>
+
+> **Posición:** activo, contrato o apuesta financiera que tengo abierta y que me deja expuesto a movimientos del mercado u otros riesgos.
+
+---
+
+# Ojo con esto
+
+Por ejemplo, una empresa puede tener:
+
+- **riesgo cambiario** porque importa en dólares,
+- **riesgo de liquidez** porque no puede vender inventario rápido,
+- **riesgo de crédito** porque sus clientes le pagan tarde,
+- y **riesgo operacional** porque factura mal.
+
+.center[.orange[No es raro tener un solo riesgo. Lo normal es tener una mezcla.]]
+
+---
+
+class: inverse, center, middle
+
+# Riesgo de mercado
+
+---
+
+# Riesgo de mercado
+
+### ¿Qué es?
+
+Es la posibilidad de pérdida porque **alguna variable de mercado se mueve**.
+
+No es que “la empresa hizo algo mal”.  
+No es que “alguien incumplió”.  
+Es que el entorno cambió y eso le pegó al valor de la posición.
+
+### ¿Qué variables suelen moverlo?
+
+- precios de acciones  
+- tasas de interés  
+- tipo de cambio  
+- precios de commodities  
+- spreads  
+- volatilidad
+
+---
+
+# Riesgo de mercado
+
+### Ejemplo
+
+Compras una acción a 100.
+
+Una semana después vale 92.
+
+No pasó nada “operativo” dentro de tu cuenta.  
+Simplemente el mercado decidió que hoy esa acción vale menos.
+
+### ¿Dónde aparece?
+
+- acciones  
+- bonos  
+- ETFs  
+- fondos  
+- derivados  
+- portafolios de inversión
+
+> .orange[**Lectura rápida:**] aquí el golpe viene por **revalorización o desvalorización**.
+
+---
+
+# Riesgo de mercado
+
+### ¿Cómo se siente en la vida real?
+
+- un fondo cae porque el mercado accionario se desploma,
+- un bono pierde valor porque subieron las tasas,
+- una importadora se aprieta porque subió el dólar,
+- una aerolínea sufre porque sube el combustible.
+
+
+.pull-left[
+### Señal práctica
+
+Aquí uno suele mirar:
+
+- precios,
+- retornos,
+- volatilidad,
+- sensibilidad,
+- escenarios,
+- VaR,
+- ES.
+
+]
+
+.pull-right[
+.center[.orange[La gran pregunta aquí es: “si el mercado se mueve, ¿cuánto me duele?”]]
+]
+
+
+---
+
+class: inverse, center, middle
+
+# Riesgo de crédito
+
+---
+
+# Riesgo de crédito
+
+### ¿Qué es?
+
+Es la posibilidad de pérdida porque **alguien que te debe plata no paga**, paga tarde, o paga menos de lo esperado.
+
+Aquí el problema no es que el precio de mercado baje.
+
+Aquí el problema es que **el flujo esperado no llega**.
+
+### ¿Dónde aparece?
+
+- cartera de clientes  
+- créditos bancarios  
+- bonos corporativos  
+- cuentas por cobrar  
+- leasing  
+- seguros de crédito
+
+---
+
+# Riesgo de crédito
+
+### Ejemplo
+
+Le vendes mercancía a un cliente a 60 días.
+
+En tus cuentas, esa venta “ya existe”.
+
+Pero llega el día 60 y el cliente no paga.
+
+Entonces tu problema no es de mercado.  
+Tu problema es de **cobro**.
+
+### Traducción financiera
+
+Esperabas un flujo.  
+El flujo falló.  
+Y eso golpea caja, utilidad y continuidad.
+
+---
+
+# Riesgo de crédito
+
+### Contexto real
+
+- un banco presta y una parte de sus clientes entra en mora,
+- una empresa compra bonos de otra firma y esa firma empeora su salud financiera,
+- un negocio vende mucho, pero cobra mal.
+
+### Qué se mira aquí
+
+- probabilidad de incumplimiento,
+- mora,
+- calidad del deudor,
+- capacidad de pago,
+- garantías,
+- concentración de cartera.
+
+> .orange[**Reflexión:**] a veces el negocio parece rentable en ventas, pero se daña por un crédito mal otorgado.
+
+---
+
+class: inverse, center, middle
+
+# Riesgo de liquidez
+
+---
+
+# Riesgo de liquidez
+
+### ¿Qué es?
+
+Es la posibilidad de pérdida porque **no puedes convertir una posición en efectivo fácil, rápido y a buen precio**.
+
+Ojo: liquidez no es solo “tener caja”.  
+También es poder **salir de una posición sin destrozar su precio**.
+
+### Tiene dos caras
+
+- **liquidez de mercado:** no hay suficiente profundidad para vender/comprar bien,  
+- **liquidez de fondeo:** no tienes caja para cumplir obligaciones.
+
+---
+
+# Riesgo de liquidez
+
+### Ejemplo
+
+Tienes un activo que “en teoría” vale 100.
+
+Pero cuando quieres venderlo de verdad:
+
+- no aparece comprador,
+- o el comprador solo te ofrece 85.
+
+Entonces una cosa es el precio en Excel,  
+y otra cosa es el precio al que sí te dejan salir.
+
+> .orange[**Dolor real:**] la pérdida no aparece porque el activo fuera malo, sino porque **no era líquido**.
+
+---
+
+# Riesgo de liquidez
+
+.pull-left[
+
+### Contexto real
+
+- una acción pequeña casi no transa,
+- un fondo inmobiliario tarda en vender,
+- una empresa tiene activos valiosos pero no caja inmediata,
+- un banco tiene obligaciones de corto plazo y activos muy lentos.
+
+### Qué se mira aquí
+
+- bid-ask spread,
+- volumen negociado,
+- profundidad,
+- días para liquidar,
+- caja disponible,
+- descalce entre activos y pasivos.
+
+
+]
+
+
+.pull-right[
+
+- .green[**Bid-ask spread:**] diferencia entre el precio al que te compran y el precio al que te venden.
+- .green[**Volumen negociado:**] cantidad de activo que realmente se compra y vende en el mercado.
+- .green[**Profundidad:**] capacidad del mercado para mover montos grandes sin cambiar mucho el precio.
+- .green[**Días para liquidar:**] tiempo estimado que tomaría convertir una posición en efectivo sin salir atropellado.
+- .green[**Caja disponible:**] dinero líquido que la empresa o inversionista tiene listo para usar o pagar.
+- .green[**Descalce entre activos y pasivos:**] diferencia entre los tiempos o condiciones en que entran los recursos y en que salen las obligaciones.
+
+
+.center[.orange[**La pregunta aquí no es solo “cuánto vale”, sino “qué tan fácil es volverlo plata”.**]]
+
+]
+
+
+
+---
+
+class: inverse, center, middle
+
+# Riesgo operacional
+
+---
+
+# Riesgo operacional
+
+### ¿Qué es?
+
+Es la posibilidad de pérdida por **fallas internas**.
+
+No nace del mercado.  
+No nace del dólar.  
+No nace de la tasa.
+
+Nace de errores en:
+
+- procesos,
+- personas,
+- sistemas,
+- controles,
+- tecnología,
+- fraude,
+- eventos externos.
+
+---
+
+# Riesgo operacional
+
+### Ejemplo
+
+No perdiste plata porque bajó una acción.
+
+Perdiste plata porque alguien digitó mal un cero  
+y donde iba una orden por 10 millones, salió por 100 millones.
+
+Eso no es mercado.  
+Eso es **operación**.
+
+### ¿Dónde aparece?
+
+En todos lados.
+
+- bancos,
+- tesorería,
+- contabilidad,
+- middle office,
+- back office.
+
+---
+
+# Riesgo operacional
+
+### Contexto real
+
+- una transferencia sale a la cuenta equivocada,
+- una base de datos se daña,
+- el sistema de trading se cae,
+- una persona salta un control,
+- una fórmula de Excel está mal arrastrada,
+- hay fraude interno.
+
+.pull-left[
+
+### Qué se mira aquí
+
+- controles,
+- segregación de funciones,
+- trazabilidad,
+- aprobaciones,
+- continuidad operativa,
+- incidentes y pérdidas.
+
+
+]
+
+.pull-right[
+
+> .orange[**Reflexión:**] una institución puede tener muy buen modelo financiero y aun así perder mucho por una operación mal hecha.
+
+
+]
+
+
+---
+
+class: inverse, center, middle
+
+# Riesgo de tasa de interés
+
+---
+
+# Riesgo de tasa de interés
+
+### ¿Qué es?
+
+Es la posibilidad de pérdida porque **las tasas cambian**.
+
+Esto afecta muchísimo a:
+
+- bonos,
+- créditos,
+- hipotecas,
+- swaps,
+- portafolios de renta fija,
+- decisiones de financiación.
+
+### Idea simple
+
+Cuando la tasa sube, muchos instrumentos de renta fija **pierden valor**.  
+Cuando la tasa baja, muchas veces **ganan valor**.
+
+---
+
+# Riesgo de tasa de interés
+
+### Ejemplo
+
+Compras hoy un bono que paga una tasa fija atractiva.
+
+Mañana el mercado empieza a ofrecer bonos nuevos con tasas más altas.
+
+Entonces tu bono viejo se vuelve menos atractivo.
+
+¿Resultado?  
+Su precio cae.
+
+### Traducción corta
+
+No cambió el emisor.  
+No cambió el cupón.  
+Cambió el entorno de tasas.
+
+---
+
+# Riesgo de tasa de interés
+
+.pull-left[
+
+### Contexto real
+
+- un banco presta a largo plazo y se financia a corto,
+- una empresa endeudada a tasa variable ve subir sus cuotas,
+- un portafolio de bonos cae cuando suben las tasas del mercado.
+
+### Qué se mira aquí
+
+- duration,
+- convexidad,
+- cash-flow mapping,
+- sensibilidad a la curva,
+- descalces de plazo.
+
+]
+
+.pull-right[
+
+- .green[**Duration:**] medida de qué tanto cambia el precio de un bono cuando cambia la tasa de interés.
+- .green[**Convexidad:**] ajuste que mejora la aproximación de la duration cuando los cambios en tasas son más grandes.
+- .green[**Cash-flow mapping:**] forma de ubicar los flujos futuros de un instrumento en distintos puntos de la curva para medir mejor su riesgo de tasa.
+- .green[**Sensibilidad a la curva:**] grado en que una posición se ve afectada por movimientos en diferentes tramos de la curva de tasas.
+- .green[**Descalces de plazo:**] diferencias entre los vencimientos o tiempos de activos y pasivos que pueden generar exposición a cambios en tasas.
+
+]
+
+.center[.orange[En renta fija, muchas veces el enemigo principal no es el impago inmediato, sino el movimiento de la tasa.]]
+
+---
+
+class: inverse, center, middle
+
+# Riesgo cambiario
+
+---
+
+# Riesgo cambiario
+
+### ¿Qué es?
+
+Es la posibilidad de pérdida porque **se mueve el tipo de cambio**.
+
+Aparece cuando una parte del negocio está en una moneda y otra parte en otra.
+
+### ¿Dónde aparece?
+
+- importadores  
+- exportadores  
+- deuda en moneda extranjera  
+- inversiones internacionales  
+- fondos globales  
+- empresas con pagos o ingresos en dólares
+
+---
+
+# Riesgo cambiario
+
+### Ejemplo
+
+Una empresa colombiana compra insumos en dólares.
+
+Presupuesta con una TRM de 4.000.
+
+Cuando va a pagar, la TRM está en 4.350.
+
+Aunque el proveedor sea el mismo y el producto sea el mismo,  
+la compra ahora cuesta más en pesos.
+
+### El golpe
+
+No vino del producto.  
+Vino de la **moneda**.
+
+---
+
+# Riesgo cambiario
+
+### Contexto real
+
+- un importador se aprieta por una devaluación,
+- un exportador puede beneficiarse cuando el dólar sube,
+- una empresa con deuda en USD ve crecer su carga en moneda local.
+
+### Qué se mira aquí
+
+- exposición neta en moneda,
+- flujos en cada divisa,
+- coberturas con forwards o swaps,
+- sensibilidad del margen al FX.
+
+> .orange[**Reflexión:**] muchas empresas creen que “no invierten en dólares”, pero igual tienen riesgo cambiario por operación.
+
+---
+
+class: inverse, center, middle
+
+# Riesgo de commodity
+
+---
+
+# Riesgo de commodity
+
+### ¿Qué es?
+
+Es la posibilidad de pérdida por cambios en el precio de materias primas o energéticos.
+
+.pull-left[
+
+### Ejemplos típicos
+
+- petróleo  
+- gas  
+- café  
+- maíz  
+- trigo  
+- oro  
+- carbón  
+- energía eléctrica
+
+]
+
+.pull-right[
+
+### ¿Dónde aparece?
+
+No solo en traders.  
+También en empresas reales.
+
+
+]
+
+---
+
+# Riesgo de commodity
+
+### Ejemplo dummy
+
+Una panadería grande depende del precio del trigo.
+
+Si el trigo sube fuerte, su costo de producción también sube.
+
+Si no puede subir precios al cliente al mismo ritmo, su margen se aprieta.
+
+### Entonces
+
+
+Solo por depender de esa materia prima, ya está expuesta.
+
+---
+
+# Riesgo de commodity
+
+### Contexto real
+
+- una aerolínea depende del combustible,
+- una generadora depende del gas o del carbón,
+- un exportador agrícola depende del precio internacional,
+- una joyería puede estar sensible al oro.
+
+### Qué se mira aquí
+
+- precio del commodity,
+- correlación con ingresos o costos,
+- coberturas,
+- escenarios de choque,
+- exposición del margen.
+
+.center[.orange[Este riesgo suele entrar al negocio por el lado del costo o del ingreso, no solo por portafolio.]]
+
+---
+
+class: inverse, center, middle
+
+# Riesgo de contraparte
+
+---
+
+# Riesgo de contraparte
+
+### ¿Qué es?
+
+Es una forma particular de riesgo de crédito.
+
+Aquí la pregunta no es solo si “alguien debe plata”, sino si **la otra parte del contrato financiero cumple o no cumple**.
+
+### ¿Dónde aparece fuerte?
+
+- derivados,
+- swaps,
+- forwards,
+- operaciones bilaterales.
+
+---
+
+# Riesgo de contraparte
+
+### Ejemplo
+
+Tienes un forward con una contraparte.
+
+El contrato te favorece.  
+Es decir, si todo sigue normal, esa contraparte debería pagarte.
+
+Pero justo cuando te toca cobrar, esa contraparte entra en problemas y no cumple.
+
+Entonces el riesgo no era solo del mercado.  
+Era también de **quién estaba del otro lado**.
+
+---
+
+# Riesgo de contraparte
+
+### Contexto real
+
+- un swap puede estar muy bien estructurado, pero la contraparte falla,
+- un forward puede tener ganancia esperada, pero la otra parte no honra,
+- una operación bilateral sin colateral puede dejarte muy expuesto. .orange[Colateral:] es una garantía que una de las partes entrega para respaldar la operación.
+
+### Qué se mira aquí
+
+- calidad crediticia de la contraparte,
+- exposición actual y potencial,
+- colaterales,
+
+
+> .orange[**Regla mental:**] en derivados no basta con preguntar “¿cuánto gano si sale bien?”, también hay que preguntar “¿quién me paga si sí me toca cobrar?”. 
+
+---
+
+class: inverse, center, middle
+
+# Riesgo de modelo
+
+---
+
+# Riesgo de modelo
+
+### ¿Qué es?
+
+Es la posibilidad de pérdida porque **el modelo que estás usando está mal**, está incompleto, está mal calibrado o se está usando fuera de contexto.
+
+No siempre el problema es el dato.  
+A veces el problema es la idea que usamos para resumir la realidad.
+
+### ¿Dónde aparece?
+
+En todos lados:
+
+- pricing,
+- VaR,
+- score de crédito,
+- provisiones,
+- ALM,
+- escenarios,
+- pronósticos.
+
+---
+
+# Riesgo de modelo
+
+### Ejemplo
+
+Un modelo de riesgo supone que “el pasado reciente representa bien lo que viene”.
+
+Con ese modelo, la pérdida esperada parece pequeña.
+
+Pero llega un shock raro, un evento extremo, o una ruptura de régimen, y el modelo se queda corto.
+
+Entonces no falló Excel.  
+No falló la tasa.  
+Falló la forma de **representar la realidad**.
+
+---
+
+# Riesgo de modelo
+
+### Contexto real
+
+- usar normalidad donde hay colas pesadas,
+- usar muy pocos datos,
+- extrapolar fuera del rango,
+- ignorar cambios estructurales,
+- calibrar bien en el pasado pero mal en crisis.
+
+### Qué se mira aquí
+
+- supuestos,
+- validación,
+- backtesting,
+- sensibilidad,
+- robustez,
+- juicio experto.
+
+.center[.orange[Un modelo no elimina incertidumbre. Solo la organiza. Y a veces la organiza mal.]]
+
+---
+
+class: inverse, center, middle
+
+# ¿Y entonces cómo se conectan?
+
+---
+
+# Una misma posición puede cargar varios riesgos
+
+Ejemplo: una empresa importa maquinaria financiada en dólares.
+
+Entonces puede tener al mismo tiempo:
+
+- **riesgo cambiario** por la TRM,
+- **riesgo de tasa** por la deuda,
+- **riesgo de crédito** si sus clientes le pagan mal,
+- **riesgo de liquidez** si no tiene caja,
+- **riesgo operacional** si ejecuta mal pagos o coberturas.
+
+> .orange[**Moraleja:**] la vida real no viene separada por capítulos. Los riesgos sí los separamos para entenderlos, pero en la práctica se mezclan.
+
+---
+
+# Una forma muy sencilla de ordenarlos
+
+| Riesgo | La pregunta más simple |
+|:--|:--|
+| Mercado | ¿Qué pasa si el mercado se mueve? |
+| Crédito | ¿Qué pasa si no me pagan? |
+| Liquidez | ¿Qué pasa si no puedo salir o no tengo caja? |
+| Operacional | ¿Qué pasa si el proceso falla? |
+| Tasa | ¿Qué pasa si cambian las tasas? |
+| Cambiario | ¿Qué pasa si cambia la moneda? |
+| Commodity | ¿Qué pasa si cambia la materia prima? |
+| Contraparte | ¿Qué pasa si la otra parte del contrato falla? |
+| Modelo | ¿Qué pasa si estoy midiendo mal? |
+
+---
+
+# Qué deja esta parte
+
+No basta con decir:
+
+> “esta posición tiene riesgo”.
+
+Lo útil es aprender a decir:
+
+- qué tipo de riesgo tiene,
+- por qué lo tiene,
+- qué variable lo activa,
+- cómo se vería la pérdida,
+- y qué herramienta serviría luego para medirlo.
+
+<br>
+
+.center[.orange[**Ahora sí tiene más sentido pasar de “tipos de riesgo” a “factores de riesgo”, porque ya sabemos qué tipo estamos tratando de explicar.**]]
+
+---
+
+# Ojo
+
+> .orange[**Idea para llevarse:**]
+> El gestor de riesgos no ve solo activos. ----> Ve **vulnerabilidades**.
+
+
+<br>
+
+- Un bono no es “solo un bono”.  
+Puede ser tasa, crédito, liquidez y modelo al mismo tiempo.
+
+
+<hr>
+
+- Una operación en dólares no es “solo una compra”.  
+Puede ser cambiario, liquidez y contraparte.
+
+
+<hr>
+
+- Y un modelo bonito no es “seguridad”.  
+Puede ser una falsa sensación de control.
+
+---
+
+
+
+# Ya vimos los tipos de riesgo
+
+> Mercado, crédito, liquidez, operacional, contraparte, modelo...
+
+Eso ya nos dice **qué tipo de problema** puede aparecer.
+
+Pero ahora falta una segunda pregunta, que es más concreta:
+
+.center[.orange[¿Dónde vive ese riesgo? <br> ¿En qué tipo de objeto financiero cae? <br> ¿Y cómo se conecta con una pérdida real?]]
+
+Ahí es donde conviene empezar a separar tres cosas:
+
+- el **mercado**,  
+- el **instrumento**,  
+- y la **exposición**.
+
+---
+
+# Primero: ¿qué es un mercado financiero?
+
+Un mercado financiero es, en el fondo, un espacio donde se **compran, venden o negocian activos y contratos**.
+
+No hay que imaginarlo solo como una “bolsa” con pantallas.
+
+También puede ser:
+
+- una bolsa organizada,
+- una red electrónica,
+- o una negociación directa entre dos partes.
+
+> .orange[**Idea simple:**]
+> El mercado es el lugar o mecanismo donde se forman precios y se intercambian riesgos.
+
+---
+
+# ¿Por qué importa hablar del mercado?
+
+Porque el riesgo no depende solo de **qué instrumento** tengo.
+
+También depende de:
+
+- cómo se negocia,
+- qué tan fácil es entrar o salir,
+- qué tan visible es el precio,
+- y quién responde si algo sale mal.
+
+<hr>
+
+.center[.orange[**Dos contratos que se parecen pueden implicar riesgos distintos solo por vivir en mercados distintos.**]]
+
+---
+
+# Dos grandes formas de mercado
+
+.pull-left[
+### Exchange
+
+Es un mercado más organizado y estandarizado.
+
+Suele tener:
+
+- reglas claras,
+- contratos más uniformes,
+- precios más visibles,
+- mayor facilidad para comparar.
+]
+
+.pull-right[
+### OTC (Over-The-Counter)
+
+En español, suele entenderse como: mercado extrabursátil. Es una negociación más bilateral y a la medida.
+
+Suele tener:
+
+- más flexibilidad,
+- menos estandarización,
+- más peso de la contraparte,
+- condiciones particulares entre las partes.
+]
+
+---
+
+# Una intuición rápida
+
+Si algo se negocia en un mercado organizado, muchas veces es más fácil:
+
+- observar precios,
+- comparar contratos,
+- y salir de la posición.
+
+Si algo se negocia OTC, muchas veces es más flexible,  
+pero también puede ser más difícil de valorar, comparar o cerrar.
+
+<br>
+
+> .orange[**Traducción a riesgo:**]
+> la forma de negociación también cambia la exposición a liquidez, contraparte y valoración.
+
+---
+
+# Entonces, ¿qué es un instrumento?
+
+Ahora sí: una vez entendido el mercado, podemos hablar del instrumento.
+
+Un **instrumento financiero** es el activo o contrato concreto que tengo.
+
+Por ejemplo:
+
+- una acción,
+- un bono,
+- un forward,
+- una opción,
+- un swap.
+
+1. El mercado es el entorno donde se negocia.  
+
+2. El instrumento es el objeto financiero específico.
+
+---
+
+# Instrumento vs. Exposición
+
+<br>
+
+> .orange[**Regla de oro del gestor:**]
+> El **instrumento** es la envoltura; la **exposición** es lo que realmente te puede hacer ganar o perder.
+
+Esta es una de las ideas más importantes en gestión de riesgos.
+
+Porque uno puede tener un contrato muy elegante, muy sofisticado, muy técnico...  
+pero al final lo que importa es:
+
+.center[.orange[¿a qué movimiento del mundo quedé realmente amarrado?]]
+
+---
+
+# ¿Por qué importa esa distinción?
+
+A veces parece que compré una “cosa”, pero en realidad compré un **movimiento**.
+
+Por ejemplo:
+
+- si compro una acción, estoy más directamente expuesto a su precio,
+- si compro una opción, no compré la acción como tal: compré un derecho ligado a su comportamiento,
+- si firmo un swap, no compré un activo físico: quedé expuesto a unos flujos.
+
+> .orange[**Idea práctica:**]
+> En riesgo, muchas veces importa menos el nombre del contrato y más la forma en que ese contrato reacciona.
+
+---
+
+# Veámoslo con instrumentos concretos
+
+Los instrumentos no son todos iguales.
+
+Y eso importa porque no todos dejan la misma exposición.
+
+Por ejemplo, comparemos cuatro casos muy típicos:
+
+- forward / future,  
+- opción,  
+- swap,  
+- activo directo.
+
+<br>
+
+.center[.orange[**La pregunta no es solo “qué son”, sino “qué tipo de comportamiento financiero me dejan encima”.**]]
+
+---
+
+
+# Activo directo
+
+Un activo directo es el caso más intuitivo.
+
+Aquí sí tengo la “cosa” financiera de forma más directa.
+
+Ejemplos típicos:
+
+- una acción,
+- un bono,
+- un ETF,
+- una divisa,
+- un commodity físico o financiero.
+
+> .orange[**Intuición simple:**]
+> aquí no tengo solo un derecho ni un intercambio de flujos.  
+> Tengo una posición que se valoriza o desvaloriza de forma más directa.
+
+---
+
+# ¿Qué deja abierto un activo directo?
+
+Deja una exposición más visible al movimiento del propio activo.
+
+Si el precio sube, gano.  
+Si el precio baja, pierdo.
+
+Pero incluso aquí hay matices:
+
+- una **acción** se mueve con su precio de mercado,
+- un **bono** también sufre por tasas,
+- una **divisa** sufre por el tipo de cambio.
+
+.center[.orange[Un activo directo parece simple, pero igual puede tener varios factores de riesgo por dentro.]]
+
+---
+
+# Ejemplo: activo directo
+
+Una persona compra acciones de Bancolombia porque cree que el sector financiero va bien.
+
+Todo parece muy simple: “compré acciones”.
+
+Pero en realidad quedó expuesta a cosas como:
+
+- el precio de la acción,
+- la percepción del mercado,
+- la liquidez del activo,
+- y el entorno económico general.
+
+> .orange[**Moraleja:**]
+> en un activo directo, la exposición suele verse más fácil...
+> pero eso no significa que sea pequeña ni que sea unidimensional.
+
+
+
+
+---
+
+# Forwards y futures
+
+En ambos casos se fija hoy un precio para comprar o vender en el futuro.
+
+Hasta ahí, se parecen.
+
+Pero en la práctica no son idénticos.
+
+.pull-left[
+### Forward
+
+- más a la medida,
+- típicamente OTC,
+- depende más del acuerdo entre partes.
+]
+
+.pull-right[
+### Future
+
+- más estandarizado: tiene condiciones ya definidas por el mercado (tamaño, vencimiento, etc).
+- negociado en mercado organizado,
+- usa margen: exige dejar una garantía para operar. 
+- se marca a mercado: cada día se recalcula cuánto se va ganando o perdiendo.
+]
+
+---
+
+# ¿Qué deja abierto un forward o un future?
+
+Dejan una exposición bastante directa al movimiento del precio del subyacente.
+
+Si el precio cambia, el valor de la posición cambia.
+
+Pero además, la estructura del mercado también importa:
+
+- en un future pesa mucho la lógica del margen y el mark-to-market,
+- en un forward pesa más la relación bilateral y la contraparte.
+
+<br>
+
+> .orange[**Moraleja:**]
+> el mismo “tipo de apuesta” puede traer riesgos adicionales distintos según cómo esté montada.
+
+---
+
+# Ejemplo: forward o future
+
+Una empresa colombiana sabe que en tres meses tendrá que comprar dólares para pagar una importación.
+
+Entonces firma hoy un **forward** para fijar la tasa de cambio.
+
+¿Qué hizo realmente?
+
+No compró los dólares hoy.  
+Lo que hizo fue **amarrar desde ya el movimiento futuro del precio del dólar**.
+
+Si el dólar sube después, el contrato la protege.  
+Si el dólar baja, tal vez termina pagando una tasa menos favorable que la de mercado.
+
+> .orange[**Moraleja:**]
+> aquí no se compra el activo hoy; se compra o vende, sobre todo, la tranquilidad frente al movimiento futuro.
+
+---
+
+
+
+
+# Opciones
+
+Una opción da un **derecho**, no una obligación.
+
+- **Call:** derecho a comprar  
+- **Put:** derecho a vender  
+
+Eso ya cambia mucho la lógica de la posición.
+
+Porque aquí la relación entre movimiento del subyacente y resultado financiero ya no es tan lineal.
+
+---
+
+# ¿Qué deja abierta una opción?
+
+Una opción no responde igual que una acción o que un bono.
+
+Puede reaccionar según:
+
+- el precio del subyacente,
+- la volatilidad,
+- el tiempo que falta,
+- y otras sensibilidades más adelante.
+
+.center[.orange[Aquí aparece una idea muy importante: no todas las posiciones pierden o ganan de forma proporcional.]]
+
+Por eso, más adelante, no todos los riesgos se miden con la misma herramienta.
+
+
+---
+
+# Ejemplo: opción
+
+Un inversionista tiene acciones y le preocupa una caída fuerte en el corto plazo.
+
+Entonces compra una **put**.
+
+.green[**¿Qué hizo realmente?**]
+
+Pagó una prima para tener un “seguro” contra una bajada fuerte del precio.
+
+Si la acción cae mucho, la put gana valor y ayuda a compensar la pérdida.  
+Si la acción no cae, la opción puede vencer sin valor y la prima se pierde.
+
+> .orange[**Moraleja:**]
+> una opción no solo sirve para apostar.  
+> También sirve para redibujar la forma de la pérdida.
+
+
+---
+
+# Ejemplo: opción
+
+Un inversionista cree que una acción puede subir con fuerza en el corto plazo.
+
+Entonces compra una **call**.
+
+.green[**¿Qué hizo realmente?**]
+
+Pagó una prima para tener el **derecho de comprar** la acción a un precio fijado desde hoy.
+
+Si la acción sube bastante, la `call` gana valor y le permite capturar esa subida con una pérdida inicial limitada a la prima.  
+Si la acción no sube lo suficiente, o no sube nada, la opción puede vencer sin valor y la prima se pierde.
+
+> .orange[**Moraleja:**]
+> una call permite participar en una subida sin tener que comprar de una vez la acción completa.  
+> O sea, no solo cambia la ganancia esperada, también cambia la forma del riesgo.
+
+
+---
+
+# Swaps
+
+Un swap intercambia flujos.
+
+Un lado paga algo.  
+El otro recibe otra cosa.
+
+Ejemplo clásico:
+
+- una parte paga tasa fija,
+- la otra paga tasa variable.
+
+Entonces el instrumento no solo sirve para invertir.
+
+También sirve para **transformar una exposición**.
+
+---
+
+# ¿Qué deja abierta un swap?
+
+Un swap muchas veces no cambia el negocio de fondo,  
+pero sí cambia **cómo se siente el riesgo**.
+
+Ejemplo:
+
+una deuda a tasa variable puede convertirse, económicamente, en una exposición más parecida a tasa fija.
+
+> .orange[**Idea clave:**]
+> hay instrumentos que no solo “cargan” riesgo; también lo rediseñan.
+
+---
+
+
+
+# Ejemplo: swap
+
+Una empresa tiene una deuda a tasa variable.
+
+Si las tasas suben, paga más.
+
+Entonces firma un **swap** para que esa deuda se comporte más parecido a una deuda a tasa fija.
+
+.green[**¿Qué logró?**]
+
+No eliminó la deuda.
+
+Lo que hizo fue **hacer más predecible lo que paga**.
+
+> .orange[**Moraleja:**]
+> un swap no quita la obligación.  
+> Solo cambia la forma en que el riesgo le pega.
+> el swap no elimina mágicamente el riesgo; más bien lo transforma en otro perfil que la empresa considera más manejable.
+
+---
+
+
+# En conclusión...
+
+Si lo miras con calma, cada instrumento deja abierta una lógica distinta:
+
+- el **activo directo** te expone de forma más visible al valor del activo,
+- el **forward / future** te amarra a un precio futuro,
+- la **opción** te da un derecho y cambia la forma de la pérdida,
+- el **swap** transforma la exposición entre flujos o factores.
+
+<br>
+
+.center[.orange[Por eso, antes de medir riesgo, primero conviene entender qué tipo de instrumento tengo y qué clase de comportamiento financiero deja abierto.]]
+
+---
+
+
+
+
+# Hasta aquí...
+
+Ya vimos que una posición no se entiende solo por su nombre.
+
+También importa:
+
+- en qué mercado vive,
+- qué instrumento tengo,
+- qué exposición deja abierta.
+
+Pero todavía falta una pregunta clave:
+
+.center[.orange[¿qué variable es la que realmente mueve el valor de esa posición?]]
+
+Ahí es donde entra el concepto de **factor de riesgo**.
+
+---
+
+# Factor de riesgo
+
+Un **factor de riesgo** es la variable que, al moverse, cambia el valor de la posición.
+
+No es el nombre del contrato.  
+No es el mercado donde se negocia.  
+No es toda la estrategia.
+
+Es la variable que realmente pega.
+
+### Ejemplos rápidos
+
+- Acción de Ecopetrol → precio de la acción  
+- Bono → tasa de interés / curva  
+- ETF de oro → precio del oro  
+- Importador → TRM  
+- Opción → precio del subyacente, volatilidad, tiempo
+
+---
+
+# Instrumento no es lo mismo que factor
+
+.pull-left[
+### Instrumento
+
+Es el activo o contrato que tengo.
+]
+
+.pull-right[
+### Factor
+
+Es la variable que lo mueve.
+]
+
+Por ejemplo:
+
+- un **bono** es el instrumento,  
+  * la **tasa** es el factor.
+
+- una **opción** es el instrumento,  
+  * el **precio del subyacente**, la **volatilidad** y el **tiempo** son factores.
+
+- un **forward cambiario** es el instrumento,  
+  * la **tasa de cambio** es el factor principal.
+
+.center[.orange[Esta distinción es clave porque después la medición del riesgo se hace sobre lo que se mueve, no sobre el nombre del contrato.]]
+
+---
+
+# Actividad: casos reales
+
+En grupos, analicen para los casos y respondan:
+
+1. ¿Cuál es el **instrumento**?
+2. ¿En qué **mercado** vive?
+3. ¿Cuál es la **exposición** que deja abierta?
+4. ¿Cuál es el **factor de riesgo** principal(es)?
+5. ¿Qué **tipo(s) de riesgo** aparecen primero?
+6. ¿Qué **variable** tendría sentido mirar después en datos?
+
+.green[**Tiempo de trabajo grupal: 20 minutos**]
+
+No se trata de resolver todo.  
+Se trata de .orange[**leer bien el caso y ordenar la lógica financiera**.]
+
+---
+
+
+
+# Caso 1: Ecopetrol
+
+Un inversionista decide comprar acciones de Ecopetrol porque considera que la empresa puede beneficiarse de un entorno favorable para el sector energético.
+
+Sin embargo, poco después de entrar, el mercado empieza a reaccionar a cambios en el precio internacional del petróleo, a noticias sobre resultados empresariales y al ambiente general del mercado local.
+
+El inversionista nota que, aunque “solo compró una acción”, el comportamiento de su inversión no depende de una sola cosa.
+
+.center[.orange[Lean el caso e identifiquen qué se está comprando realmente y qué es lo que termina moviendo su valor.]]
+
+---
+
+# Caso 2: empresa importadora y dólar
+
+Una empresa colombiana sabe que dentro de tres meses tendrá que pagar una importación en dólares.
+
+La gerencia está preocupada porque, si la tasa de cambio sube fuerte en ese periodo, el costo en pesos de la operación podría aumentar bastante y afectar el margen del negocio.
+
+Por eso, la empresa decide firmar hoy un contrato para fijar desde ya las condiciones de esa compra futura de dólares.
+
+.center[.orange[No piensen todavía en la fórmula ni en el precio. Piensen qué problema tenía la empresa y qué tipo de exposición quiso controlar.]]
+
+---
+
+# Caso 3: inversión con opción sobre una acción o índice
+
+Un inversionista cree que en el corto plazo puede haber un movimiento importante en el mercado accionario, pero no quiere entrar comprando directamente el activo completo.
+
+Entonces decide pagar una prima para adquirir un contrato que le da un derecho, mas no una obligación, dependiendo de cómo se comporte el activo subyacente.
+
+Con el paso de los días nota que el valor de ese contrato cambia, incluso cuando el activo base no se mueve de forma tan dramática.
+
+.center[.orange[La pregunta aquí no es solo qué contrato compró, sino por qué ese contrato no reacciona igual que una acción normal.]]
+
+---
+
+# Caso 4: empresa endeudada a tasa variable
+
+Una empresa tiene una deuda grande cuyos pagos dependen de una tasa variable.
+
+La administración está preocupada porque, si las tasas siguen subiendo, el costo financiero puede crecer bastante y volver más incierto el flujo de caja.
+
+Por eso, decide celebrar un contrato financiero con el objetivo de cambiar la forma en que esa deuda le pega, buscando una estructura más predecible para sus pagos.
+
+.center[.orange[Lean el caso pensando en esto: ¿el contrato elimina el problema de fondo o solo cambia la manera en que ese problema se siente?]]
+
+---
+
+# ¿Qué deja esta actividad?
+
+La idea no era resolver modelos.
+
+La idea era notar que, antes de medir riesgo, primero toca ordenar bien la historia:
+
+- qué tengo,
+- cómo se negocia,
+- qué me mueve,
+- y qué variable debería seguir después.
+
+.center[.orange[Ya con eso claro, ahora sí tiene sentido pasar del lenguaje financiero al lenguaje de datos.]]
+
+---
+
+
+# Primer entregable
+
+
+.pull-left[
+
+Los casos cortos de hoy ayudan a ordenar el lenguaje del curso:
+
+- tipo de riesgo,
+- instrumento,
+- mercado,
+- exposición,
+- factor de riesgo.
+
+Pero ahora viene un caso más completo.
+
+.center[.orange[**Primer entregable:** análisis del caso Silicon Valley Bank (SVB)]]
+
+La idea ya no es solo identificar conceptos por separado, sino ver cómo **varios riesgos pueden aparecer al mismo tiempo** dentro de una situación real.
+
+]
+
+.pull-right[
+
+
+.green[**¿Qué se espera?**]
+
+Un informe corto de análisis donde se discuta, con criterio financiero:
+
+- qué exposiciones eran centrales en el caso,
+- qué factores de riesgo empezaron a golpear,
+- cómo se conectaron distintos tipos de riesgo,
+- y qué señales de alerta podían leerse desde la gestión del riesgo.
+
+.center[.orange[No se trata de resumir el caso. Se trata de leerlo como analistas de riesgo.]]
+
+
+]
+
+---
+
+
+# El puente a datos
+
+Si ya sé cuál es la variable que me mueve el valor, entonces aparece una pregunta nueva:
+
+<br>
+.center[.orange[**¿cómo represento ese movimiento en datos?**]]
+
+<br>
+
+Tendríamos entonces:
+
+- precios,
+- retornos,
+- P&L,
+- volatilidad,
+- y luego métricas más formales de riesgo.
+
+
+
+---
+
+
+
+class: center, middle, inverse
+
+# 2. Del precio al retorno
+
+---
+
+# Ya sabemos qué variable importa
+
+Con los casos anteriores ya vimos algo clave:
+
+- qué instrumento tengo,
+- qué exposición deja,
+- y qué factor de riesgo lo mueve.
+
+Pero todavía falta una decisión muy importante:
+
+.center[.orange[¿cómo represento ese movimiento en datos?]]
+
+Porque una cosa es decir  
+“me pega la tasa”,  
+“me pega el dólar”,  
+“me pega el precio de la acción”...
+
+y otra muy distinta es decidir **cómo voy a medir ese cambio**.
+
+---
+
+# El puente natural
+
+Si quiero hablar de riesgo, necesito una forma de observar:
+
+- cuánto cambió una posición,
+- si ese cambio fue grande o pequeño,
+- si fue ganancia o pérdida,
+- y si ese cambio es comparable con otros activos.
+
+Por eso, antes de entrar a VaR, ES o GARCH, toca pasar por una pregunta mucho más básica:
+
+.center[.orange[¿trabajo con precios, con retornos o con P&L?]]
+
+---
+
+# Precio, valor, retorno y P&L
+
+.pull-left[
+### Precio
+
+Es lo que el mercado está dispuesto a pagar hoy por un activo o contrato.
+]
+
+.pull-right[
+### Valor, retorno y P&L
+
+**Valor** puede depender de flujos, de un modelo o de una valoración económica.
+
+**Retorno** mide el cambio relativo de una inversión entre dos momentos.
+
+**P&L** mide la ganancia o pérdida en dinero.
+
+.center[.orange[Las tres cosas se parecen, pero no son lo mismo.]]
+
+]
+
+---
+
+# ¿Por qué no quedarnos solo con precios?
+
+El precio sirve mucho, pero tiene varios límites cuando queremos analizar riesgo.
+
+- depende del nivel del activo,
+- no hace fácil comparar activos con escalas distintas,
+- y no resume bien el cambio relativo.
+
+Por ejemplo:
+
+- una acción puede valer 20,
+- otra puede valer 2.000,
+
+pero eso por sí solo no dice cuál fue más riesgosa.
+
+.center[.orange[En riesgo, muchas veces importa menos cuánto vale hoy y más cómo cambia.]]
+
+---
+
+# Un mismo cambio en precio no significa lo mismo
+
+.pull-left[
+### Caso A
+
+Un activo pasa de 100 a 110.
+
+Cambio en precio = 10
+]
+
+.pull-right[
+### Caso B
+
+Otro activo pasa de 1.000 a 1.010.
+
+Cambio en precio = 10
+]
+
+Ambos subieron 10 unidades.
+
+Pero claramente no cambiaron lo mismo en términos relativos.
+
+- Caso A: subió 10%
+- Caso B: subió 1%
+
+> .orange[**Idea clave:**]
+> el precio muestra nivel.  
+> El retorno muestra cambio relativo.
+
+---
+
+# Entonces, ¿qué es un retorno?
+
+Un retorno resume cómo cambió el valor de una inversión entre dos momentos.
+
+En lenguaje muy simple:
+
+> cuánto gané o perdí **respecto al valor inicial**
+
+Eso lo vuelve muy útil porque permite:
+
+- comparar activos distintos,
+- describir variación,
+- construir métricas de desempeño,
+- y empezar a medir riesgo.
+
+---
+
+# Entonces, ¿qué es un retorno?
+
+.pull-left[
+### Retorno simple
+
+$$R_t = \frac{P_t - P_{t-1}}{P_{t-1}}$$
+
+Se lee así:
+
+“qué porcentaje cambió respecto al valor del periodo anterior”.
+]
+
+.pull-right[
+### Log-retorno
+
+$$r_t = \log\left(\frac{P_t}{P_{t-1}}\right)$$
+
+Se usa mucho en modelación porque tiene propiedades matemáticas más cómodas.
+]
+
+---
+
+# Retorno simple: intuición
+
+Si un activo pasa de 100 a 105:
+
+$$R_t = \frac{105-100}{100}=0.05$$
+
+> Eso significa un retorno de **5%**.
+
+> Esto es muy fácil de leer y de comunicar.
+
+Por eso el retorno simple suele ser muy natural cuando uno quiere:
+
+- explicar resultados,
+- construir reportes,
+- hablar con gente no tan técnica.
+
+---
+
+# Log-retorno: intuición
+
+Si un activo pasa de 100 a 105:
+
+$$r_t = \log\left(\frac{105}{100}\right)=\log(1.05)$$
+
+Eso da aproximadamente **0.04879**, es decir, cerca de **4.88%**.
+
+> No es exactamente igual al retorno simple.
+
+Pero cuando los cambios son pequeños, ambos suelen quedar muy cerca.
+
+.center[.orange[Por eso en datos diarios muchas veces se parecen muchísimo.]]
+
+
+---
+
+
+# ¿Para qué sirve cada uno?
+
+.pull-left[
+### Retorno simple
+
+- más intuitivo,
+- más natural para comunicar,
+- más fácil para interpretar rápido,
+- útil en reportes y lectura financiera.
+]
+
+.pull-right[
+### Log-retorno
+
+- más útil para modelar,
+- se agrega mejor en el tiempo,
+- aparece muchísimo en econometría y series de tiempo,
+- es muy común en papers y paquetes.
+]
+
+> .orange[**La pregunta correcta no es cuál es “el bueno”.**]  
+> La pregunta correcta es:  
+> **¿quiero comunicar o quiero modelar?**
+
+---
+
+# Una advertencia sana
+
+No hay que volver esto una guerra.
+
+Muchas veces en finanzas se usan ambos, pero con propósitos distintos.
+
+- para explicar desempeño, suele ser cómodo el simple,
+- para modelar y trabajar series, suele aparecer mucho el log.
+
+Lo importante no es memorizar dos fórmulas.
+
+Lo importante es saber **por qué las estoy usando**.
+
+---
+
+# También importa la frecuencia
+
+No es lo mismo mirar una serie:
+
+- diaria,
+- semanal,
+- mensual.
+
+Porque a distinta frecuencia cambia la lectura de:
+
+- la variación,
+- la volatilidad,
+- los extremos,
+- y hasta la intuición del riesgo.
+
+.center[.orange[Antes de medir, no solo importa la variable. También importa cada cuánto la observo.]]
+
+---
+
+# Cuando el retorno no alcanza
+
+En muchísimos casos el retorno sirve muy bien.
+
+Pero no siempre es la mejor forma de pensar una posición.
+
+Sobre todo cuando hablamos de:
+
+- estrategias más complejas,
+- posiciones long-short,
+    * Long: apuestas a que algo suba, o ganas si sube.
+    * Short: apuestas a que algo baje, o ganas si baja.
+- derivados,
+- portafolios donde el valor puede no ser tan intuitivo.
+
+Ahí aparece otra medida muy importante:
+
+.center[.orange[el P&L.]]
+
+---
+
+# ¿Qué es P&L?
+
+**P&L** significa **Profit and Loss**.
+
+En simple:
+
+**ganancia o pérdida monetaria** de una posición en un periodo dado.
+
+No está en porcentaje.  
+Está en plata.
+
+Ejemplo:
+
+- ayer la posición valía 100 millones,
+- hoy vale 95 millones,
+
+entonces:
+
+- retorno = -5%
+- P&L = -5 millones
+
+---
+
+# ¿Por qué existe P&L si ya tengo retorno?
+
+Porque hay veces en que lo que más importa no es el porcentaje, sino la plata.
+
+Ejemplo:
+
+- una pérdida de 1% en una posición pequeña puede ser irrelevante,
+- pero 1% en una posición gigante puede ser un golpe fuerte.
+
+Además, en gestión del riesgo muchas veces la pregunta es:
+
+> .orange[¿cuánta plata puedo perder?]
+
+Y ahí P&L habla más directo que el retorno.
+
+---
+
+# Cálculo simple de P&L
+
+Si una posición vale $V_t$ hoy y $V_{t-1}$ ayer:
+
+$$P\&L_t = V_t - V_{t-1}$$
+
+Se lee así:
+
+- si el resultado es positivo, hubo ganancia,
+- si es negativo, hubo pérdida.
+
+Muy simple, pero muy importante.
+
+Porque más adelante, muchas métricas de riesgo terminan pensándose justo así:
+en plata, no solo en porcentaje.
+
+---
+
+# Retorno vs P&L
+
+.pull-left[
+### Retorno
+
+- cambio relativo,
+- se expresa en porcentaje,
+- ayuda a comparar activos distintos.
+]
+
+.pull-right[
+### P&L
+
+- cambio monetario,
+- se expresa en dinero,
+- ayuda a dimensionar el impacto real de una variación.
+]
+
+.center[.orange[Las dos miradas son útiles. Lo importante es no confundirlas.]]
+
+---
+
+# Hasta aquí...
+
+Hasta aquí ya tenemos cuatro piezas básicas:
+
+- **precio**: cuánto vale en mercado,
+- **valor**: cuánto creo que vale o cuánto representa,
+- **retorno**: cuánto cambió en términos relativos,
+- **P&L**: cuánto se ganó o perdió en dinero.
+
+Con eso ya sí vale la pena llevar la discusión a datos.
+
+---
+
+# Ahora sí: llevemos esto a R
+
+La idea todavía no es correr modelos sofisticados.
+
+La idea es mirar cómo se ven, en datos reales:
+
+- los precios,
+- los retornos simples,
+- los log-retornos,
+- y una primera lectura de P&L.
+
+.center[.orange[Primero observamos. Después modelamos.]]
+
+---
+
+# Paquetes que se usarán
+
+```{r, echo=TRUE}
+library(tidyverse)
+library(tidyquant)
+library(slider)
+library(scales)
+library(moments)
+```
+
+---
+
+# Cuatro activos para ilustrar
+
+```{r, echo=TRUE}
+tickers <- c("SPY", "TLT", "GLD", "UUP")
+
+nombres <- c(
+  SPY = "Acciones USA",
+  TLT = "Bonos largos",
+  GLD = "Oro",
+  UUP = "Dólar"
+)
+```
+
+.pull-left[
+### ¿Por qué estos cuatro?
+
+Porque ayudan a mostrar que no todos los activos se comportan igual.
+]
+
+.pull-right[
+### Historias distintas
+
+- **SPY**: mercado accionario  
+- **TLT**: renta fija de largo plazo  
+- **GLD**: oro  
+- **UUP**: dólar
+]
+
+---
+
+# Descarga de precios
+
+```{r, echo=TRUE}
+precios <- tq_get(
+  tickers,
+  from = "2021-01-01",
+  to   = Sys.Date()
+) %>%
+  select(symbol, date, adjusted) %>%
+  mutate(activo = recode(symbol, !!!nombres))
+
+glimpse(precios)
+```
+
+---
+
+# Qué hace este bloque
+
+.pull-left[
+### En simple
+
+- descarga precios,
+- se queda con fecha y precio ajustado,
+- y agrega nombres más fáciles de leer.
+]
+
+.pull-right[
+### Ojo con `adjusted`
+
+Se usa mucho porque incorpora ajustes por eventos corporativos.
+
+Para series financieras, el precio ajustado suele ser más limpio que el cierre bruto.
+]
+
+
+---
+
+# ¿Qué significa `adjusted`?
+
+`adjusted` no es el precio “tal cual cerró” ese día.
+
+Es un precio **corregido** para que la serie histórica no se vea rara por cosas que hace la empresa y que **no son pérdidas ni ganancias reales**.
+
+### Ejemplos típicos
+
+- **Dividendos:** la empresa reparte plata al accionista.  
+  Entonces el precio puede bajar, pero no porque el negocio se dañó.
+
+- **Splits:** la empresa divide sus acciones en más partes.  
+  El precio por acción baja, pero tu valor total no cambia.
+
+.center[.orange[Por eso, si uno usa el cierre bruto, a veces la serie cuenta una historia engañosa.]]
+
+---
+
+# Intuición de `adjusted`
+
+Imagina esto:
+
+- ayer tenías **1 acción de 100**,
+- hoy la empresa hace un **split 2 a 1**,
+- entonces ahora tienes **2 acciones de 50**.
+
+Si miras el precio bruto, parece que pasó de 100 a 50.
+
+Y uno pensaría:
+
+> “uy, cayó 50%”
+
+Pero no.
+
+Tu riqueza sigue siendo la misma:
+
+- antes: 1 × 100 = 100  
+- después: 2 × 50 = 100
+
+.green[**Entonces, ¿qué hace `adjusted`?**]
+
+Corrige la serie para que ese cambio no parezca una pérdida falsa.
+
+---
+
+# Entonces, ¿por qué usar `adjusted`?
+
+Porque cuando uno quiere calcular:
+
+- retornos,
+- volatilidad,
+- riesgo,
+
+le conviene trabajar con una serie que muestre mejor la **historia económica real** del activo.
+
+> .orange[**Idea corta:**]
+> `adjusted` ayuda a que la serie no tenga saltos “mentirosos” por dividendos o cambios en la cantidad de acciones.
+
+Y ojo:
+
+- **volumen** = cuántas acciones se negociaron  
+- **adjusted** = precio corregido para que la serie sea más comparable
+
+
+
+---
+
+# Primero: ver precios
+
+```{r, echo=TRUE, eval=FALSE}
+ggplot(precios, aes(x = date, y = adjusted, color = activo)) +
+  geom_line(show.legend = FALSE) +
+  facet_wrap(~activo, scales = "free_y", ncol = 2) +
+  labs(
+    title = "Precios ajustados",
+    x = NULL, y = "Precio"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+
+---
+
+# Primero: ver precios
+
+```{r, fig.width=8, fig.height=4.5, out.width="70%", fig.align="center"}
+ggplot(precios, aes(x = date, y = adjusted, color = activo)) +
+  geom_line(show.legend = FALSE) +
+  facet_wrap(~activo, scales = "free_y", ncol = 2) +
+  labs(
+    title = "Precios ajustados",
+    x = NULL, y = "Precio"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+
+
+
+---
+
+# Cómo leer este gráfico
+
+.pull-left[
+### Lo que sí muestra bien
+
+- tendencia,
+- ciclos,
+- subidas y caídas largas,
+- niveles muy distintos.
+]
+
+.pull-right[
+### Lo que todavía no muestra bien
+
+- comparabilidad directa,
+- variación relativa,
+- qué activo fue más nervioso,
+- qué tan extremos fueron los malos días.
+]
+
+<br>
+
+.center[.orange[**Por eso el siguiente paso natural es transformar precio en retorno.**]]
+
+---
+
+# Construcción de retornos
+
+```{r, echo=TRUE}
+retornos <- precios %>%
+  group_by(symbol, activo) %>%
+  arrange(date) %>%
+  mutate(
+    ret_simple = adjusted / lag(adjusted) - 1,
+    ret_log    = log(adjusted / lag(adjusted))
+  ) %>%
+  drop_na()
+
+retornos %>%
+  select(date, activo, ret_simple, ret_log) %>%
+  slice_head(n = 8)
+```
+
+---
+
+# Qué significan estas columnas
+
+.pull-left[
+### `ret_simple`
+
+Cambio porcentual “normal”.
+
+Es el retorno que leeríamos de forma más intuitiva.
+]
+
+.pull-right[
+### `ret_log`
+
+Cambio logarítmico.
+
+En datos diarios suele quedar muy parecido al simple,  
+pero no es exactamente igual.
+]
+
+> .orange[**Punto importante:**]
+> aquí ya no estamos mirando niveles.
+> Estamos mirando cambios.
+
+---
+
+# Precios a retornos: una mini comparación manual
+
+```{r, echo=TRUE}
+ejemplo_manual <- tibble(
+  precio_ayer = 100,
+  precio_hoy  = 105
+) %>%
+  mutate(
+    ret_simple = (precio_hoy - precio_ayer) / precio_ayer,
+    ret_log    = log(precio_hoy / precio_ayer),
+    pnl        = precio_hoy - precio_ayer
+  )
+
+ejemplo_manual
+```
+
+---
+
+# Cómo leer esta mini tabla
+
+Con el mismo movimiento de 100 a 105, aparecen tres formas de contarlo:
+
+- **retorno simple**: 5%
+- **log-retorno**: ~4.88%
+- **P&L**: 5 unidades monetarias
+
+.center[.orange[No son tres cosas rivales. Son tres maneras de mirar el mismo cambio.]]
+
+---
+
+# Retornos en serie de tiempo
+
+```{r, echo=TRUE, eval=FALSE}
+ggplot(retornos, aes(x = date, y = ret_simple, color = activo)) +
+  geom_line(show.legend = FALSE, alpha = 0.8) +
+  facet_wrap(~activo, ncol = 2) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retornos simples diarios",
+    x = NULL, y = "Retorno"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+
+
+
+# Retornos en serie de tiempo
+
+```{r, fig.width=8, fig.height=4.5, out.width="70%", fig.align="center"}
+ggplot(retornos, aes(x = date, y = ret_simple, color = activo)) +
+  geom_line(show.legend = FALSE, alpha = 0.8) +
+  facet_wrap(~activo, ncol = 2) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retornos simples diarios",
+    x = NULL, y = "Retorno"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+
+# Qué cambia cuando paso a retornos
+
+.pull-left[
+### Ahora sí aparecen mejor
+
+- días extremos,
+- clustering visual,
+- momentos tranquilos,
+- momentos tensos.
+]
+
+.pull-right[
+### Idea importante
+
+Los retornos no se ven “bonitos”.
+
+Y justamente por eso sirven.
+
+Un gráfico de retornos suele ser más feo, pero también más honesto para hablar de riesgo.
+]
+
+---
+
+# Log-retornos en serie de tiempo
+
+```{r, echo=TRUE, eval=FALSE}
+ggplot(retornos, aes(x = date, y = ret_log, color = activo)) +
+  geom_line(show.legend = FALSE, alpha = 0.8) +
+  facet_wrap(~activo, ncol = 2) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Log-retornos diarios",
+    x = NULL, y = "Log-retorno"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+
+
+
+
+
+# Log-retornos en serie de tiempo
+
+```{r, fig.width=8, fig.height=4.5, out.width="70%", fig.align="center"}
+ggplot(retornos, aes(x = date, y = ret_log, color = activo)) +
+  geom_line(show.legend = FALSE, alpha = 0.8) +
+  facet_wrap(~activo, ncol = 2) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Log-retornos diarios",
+    x = NULL, y = "Log-retorno"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+# ¿Se ven muy distintos?
+
+A simple vista, no tanto.
+
+Y eso es normal en frecuencia diaria.
+
+Pero el hecho de que “se vean parecidos” no significa que sean idénticos ni que den lo mismo en todos los contextos.
+
+> .orange[**Regla sana:**]
+> para lectura e intuición, el simple suele ser más amable.  
+> para modelación, el log aparece muchísimo más.
+
+---
+
+# Simple vs log en un solo activo
+
+```{r, echo=TRUE, eval=FALSE}
+comparacion_spy <- retornos %>%
+  filter(symbol == "SPY")
+
+ggplot(comparacion_spy, aes(x = ret_simple, y = ret_log)) +
+  geom_point(alpha = 0.35) +
+  geom_abline(linetype = 2, color = "red") +
+  labs(
+    title = "SPY: retorno simple vs log-retorno",
+    x = "Retorno simple",
+    y = "Log-retorno"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+
+
+# Simple vs log en un solo activo
+
+```{r, fig.width=8, fig.height=4.5, out.width="70%", fig.align="center"}
+comparacion_spy <- retornos %>%
+  filter(symbol == "SPY")
+
+ggplot(comparacion_spy, aes(x = ret_simple, y = ret_log)) +
+  geom_point(alpha = 0.35) +
+  geom_abline(linetype = 2, color = "red") +
+  labs(
+    title = "SPY: retorno simple vs log-retorno",
+    x = "Retorno simple",
+    y = "Log-retorno"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+
+# Cómo leer esta nube
+
+.pull-left[
+### Si cae cerca de la diagonal
+
+significa que ambos están muy cerca para la mayoría de observaciones.
+]
+
+.pull-right[
+### ¿Entonces para qué distinguirlos?
+
+Porque cuando uno empiece a:
+
+- agregar en el tiempo,
+- modelar volatilidad,
+- trabajar series,
+- leer papers,
+- usar paquetes especializados,
+
+esa diferencia deja de ser un detalle menor.
+]
+
+---
+
+# Ahora llevemos también esto a P&L
+
+Para ver P&L de forma simple, supongamos una posición de 100 unidades en cada activo.
+
+```{r, echo=TRUE}
+pnl <- precios %>%
+  group_by(symbol, activo) %>%
+  arrange(date) %>%
+  mutate(
+    cambio_precio = adjusted - lag(adjusted),
+    pnl_100 = 100 * cambio_precio
+  ) %>%
+  drop_na()
+
+pnl %>%
+  select(date, activo, cambio_precio, pnl_100) %>%
+  slice_head(n = 8)
+```
+
+---
+
+# Qué significa `pnl_100`
+
+Si yo tuviera una posición de 100 unidades del activo,  
+esa columna muestra la ganancia o pérdida monetaria diaria aproximada.
+
+Entonces:
+
+- un retorno me dice el cambio relativo,
+- el P&L me dice cuánto duele o beneficia en dinero.
+
+.center[.orange[Ahí ya empezamos a acercarnos a la lógica real de la gestión del riesgo.]]
+
+---
+
+# P&L en serie de tiempo
+
+```{r, echo=TRUE, eval=FALSE}
+ggplot(pnl, aes(x = date, y = pnl_100, color = activo)) +
+  geom_line(show.legend = FALSE, alpha = 0.8) +
+  facet_wrap(~activo, ncol = 2, scales = "free_y") +
+  labs(
+    title = "P&L diario de una posición de 100 unidades",
+    x = NULL, y = "P&L"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+
+
+
+# P&L en serie de tiempo
+
+```{r, fig.width=8, fig.height=4.5, out.width="70%", fig.align="center"}
+ggplot(pnl, aes(x = date, y = pnl_100, color = activo)) +
+  geom_line(show.legend = FALSE, alpha = 0.8) +
+  facet_wrap(~activo, ncol = 2, scales = "free_y") +
+  labs(
+    title = "P&L diario de una posición de 100 unidades",
+    x = NULL, y = "P&L"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+
+
+# Cómo leer este gráfico
+
+.pull-left[
+### Aquí ya no estamos en porcentaje
+
+Estamos viendo cambios monetarios.
+]
+
+.pull-right[
+### ¿Qué deja esto claro?
+
+Que dos activos pueden tener retornos parecidos,  
+pero cuando la posición cambia de tamaño, el impacto económico también cambia.
+
+Por eso, en gestión del riesgo, muchas veces interesa mucho ver ambas cosas:
+
+- retorno,
+- y P&L.
+]
+
+---
+
+# Resumen descriptivo de retornos
+
+```{r, echo=TRUE, eval=FALSE}
+resumen <- retornos %>%
+  group_by(activo) %>%
+  summarise(
+    media = mean(ret_simple),
+    vol   = sd(ret_simple),
+    min   = min(ret_simple),
+    max   = max(ret_simple),
+    skew  = moments::skewness(ret_simple),
+    kurt  = moments::kurtosis(ret_simple),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    media = percent(media, accuracy = 0.01),
+    vol   = percent(vol, accuracy = 0.01),
+    min   = percent(min, accuracy = 0.01),
+    max   = percent(max, accuracy = 0.01),
+    skew  = round(skew, 2),
+    kurt  = round(kurt, 2)
+  )
+
+knitr::kable(resumen)
+```
+
+---
+
+
+# Resumen descriptivo de retornos
+
+```{r}
+resumen <- retornos %>%
+  group_by(activo) %>%
+  summarise(
+    media = mean(ret_simple),
+    vol   = sd(ret_simple),
+    min   = min(ret_simple),
+    max   = max(ret_simple),
+    skew  = moments::skewness(ret_simple),
+    kurt  = moments::kurtosis(ret_simple),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    media = percent(media, accuracy = 0.01),
+    vol   = percent(vol, accuracy = 0.01),
+    min   = percent(min, accuracy = 0.01),
+    max   = percent(max, accuracy = 0.01),
+    skew  = round(skew, 2),
+    kurt  = round(kurt, 2)
+  )
+
+knitr::kable(resumen)
+```
+
+---
+
+
+# Cómo leer esta tabla
+
+.pull-left[
+### Media
+
+Da una idea del comportamiento promedio.
+
+Pero ojo:
+
+**promedio no es riesgo**.
+]
+
+.pull-right[
+### Vol, min, max, skew y kurt
+
+- **vol**: qué tanto oscila  
+- **min / max**: extremos observados  
+- **skew**: si la distribución se inclina más hacia pérdidas o ganancias  
+- **kurt**: qué tan pesadas parecen las colas
+
+Aquí ya se empieza a ver por qué la simple desviación estándar a veces se queda corta.
+]
+
+---
+
+# Volatilidad móvil
+
+```{r, echo=TRUE, eval=FALSE}
+vol_movil <- retornos %>%
+  group_by(activo) %>%
+  arrange(date) %>%
+  mutate(
+    vol_30 = slide_dbl(
+      ret_simple,
+      .f = sd,
+      .before = 29,
+      .complete = TRUE
+    ) * sqrt(252)
+  ) %>%
+  drop_na(vol_30)
+
+ggplot(vol_movil, aes(x = date, y = vol_30, color = activo)) +
+  geom_line(show.legend = FALSE) +
+  facet_wrap(~activo, ncol = 2) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Volatilidad móvil anualizada (30 días)",
+    x = NULL, y = "Volatilidad"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+
+
+# Volatilidad móvil
+
+```{r, fig.width=8, fig.height=4.5, out.width="70%", fig.align="center"}
+vol_movil <- retornos %>%
+  group_by(activo) %>%
+  arrange(date) %>%
+  mutate(
+    vol_30 = slide_dbl(
+      ret_simple,
+      .f = sd,
+      .before = 29,
+      .complete = TRUE
+    ) * sqrt(252)
+  ) %>%
+  drop_na(vol_30)
+
+ggplot(vol_movil, aes(x = date, y = vol_30, color = activo)) +
+  geom_line(show.legend = FALSE) +
+  facet_wrap(~activo, ncol = 2) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Volatilidad móvil anualizada (30 días)",
+    x = NULL, y = "Volatilidad"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+
+
+# Este gráfico deja una idea poderosa
+
+.pull-left[
+### La volatilidad no es fija
+
+Hay periodos calmados y periodos tensos.
+]
+
+.pull-right[
+### Y eso prepara el terreno para después
+
+Si la volatilidad cambia en el tiempo, entonces no basta con decir:
+
+> “el riesgo promedio del activo es tal”.
+
+Hay momentos donde el mercado se comporta distinto.
+
+Ahí es donde más adelante entran:
+
+**EWMA, GARCH, VaR dinámico y backtesting**.
+]
+
+---
+
+# Una lectura financiera muy inicial
+
+.pull-left[
+### SPY
+
+Tiende a representar riesgo de mercado accionario.
+]
+
+.pull-right[
+### TLT, GLD y UUP
+
+Pueden reaccionar distinto frente a tensión, tasas, refugio o moneda.
+
+No se trata de memorizar que uno “siempre protege”.
+
+Se trata de entender que cada activo cuenta una historia distinta de riesgo.
+]
+
+---
+
+# Entonces, ¿qué deja sembrada esta sección?
+
+Ya vimos que una misma posición puede contarse desde varios ángulos:
+
+- **precio** para ver el nivel,
+- **retorno** para ver el cambio relativo,
+- **P&L** para ver la ganancia o pérdida monetaria,
+- **volatilidad** para resumir oscilación.
+
+.center[.orange[La medición del riesgo depende mucho de cómo represento el movimiento que me importa.]]
+
+---
+
+# Importante!
+
+Antes de correr un modelo, conviene ordenar bien tres preguntas:
+
+1. ¿qué variable me mueve?  
+2. ¿cómo la voy a representar: precio, retorno o P&L?  
+3. ¿qué me deja ver mejor esa representación?
+
+Ese pequeño criterio vale mucho.
+
+Porque después, cuando entren VaR, ES, GARCH o backtesting,  
+ya no se van a sentir como técnicas sueltas,  
+sino como herramientas aplicadas sobre una variable bien pensada.
+
+---
+
+# Lo que viene después
+
+Ahora sí empieza a tener sentido abrir la siguiente conversación:
+
+.center[.orange[si ya sé representar el movimiento de una posición, entonces ¿cómo lo convierto en una medida de riesgo?]]
+
+Y ahí es donde entran de forma natural preguntas como:
+
+- ¿qué tanto oscila?,
+- ¿cuánto podría perder?,
+- ¿qué tan mala puede ser una cola?,
+- ¿y qué tan bien está funcionando mi forma de medir?
+
+
+---
+
+
+
+class: inverse, center, middle
+background-color: #122140
+
+.pull-left[
+
+.center[
+<br><br>
+
+# Gracias!!!
+
+<br>
+
+
+
+### ¿Preguntas?
+
+<br>
+
+
+```{r qr, echo=FALSE, fig.align="center", out.width="49%"}
+knitr::include_graphics("img/qr-code.png")
+```
+
+]
+]
+
+
+.pull-right[
+
+<br> 
+<br> 
+<img style="border-radius: 50%;" src="img/avatar.png"
+width="150px"
+/>
+
+### [www.joaquibarandica.com](https://www.joaquibarandica.com)
+
+`r icon("envelope")` orlando.joaqui@correounivalle.edu.co
+
+<img src="img/Logo.jpg" width="120%">
+
+]
+
+
+<br><br><br>
+
+
+
+
+
+
+
+
+
