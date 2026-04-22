@@ -1,0 +1,5477 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Modelación y gestión de riesgos financieros</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Orlando Joaqui-Barandica" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/rladies.css" rel="stylesheet" />
+    <link href="libs/remark-css/rladies-fonts.css" rel="stylesheet" />
+    <script src="libs/clipboard/clipboard.min.js"></script>
+    <link href="libs/shareon/shareon.min.css" rel="stylesheet" />
+    <script src="libs/shareon/shareon.min.js"></script>
+    <link href="libs/xaringanExtra-shareagain/shareagain.css" rel="stylesheet" />
+    <script src="libs/xaringanExtra-shareagain/shareagain.js"></script>
+    <link href="libs/xaringanExtra-clipboard/xaringanExtra-clipboard.css" rel="stylesheet" />
+    <script src="libs/xaringanExtra-clipboard/xaringanExtra-clipboard.js"></script>
+    <script>window.xaringanExtraClipboard(null, {"button":"Copy Code","success":"Copied!","error":"Press Ctrl+C to Copy"})</script>
+    <link href="libs/font-awesome-animation/font-awesome-animation-emi.css" rel="stylesheet" />
+    <script src="libs/fontawesome/js/fontawesome-all.min.js"></script>
+    <link href="libs/font-awesome/css/all.min.css" rel="stylesheet" />
+    <link href="libs/font-awesome/css/v4-shims.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="fonts_mtheme.css" type="text/css" />
+    <link rel="stylesheet" href="sidney.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+
+
+
+
+
+class: inverse, left, bottom
+background-image: url("img/fondo.jpg")
+background-size: cover
+
+
+# **Modelación y gestión de riesgos financieros**
+----
+
+## **Mercados, instrumentos, retornos y primeras ideas de riesgo**
+
+### Orlando Joaqui-Barandica
+###  
+
+
+
+
+
+
+
+
+
+
+---
+
+
+
+class: center, middle
+
+
+
+
+
+&lt;img src="img/univalle.jpg" width="20%" style="display: block; margin: auto;" /&gt;
+
+
+
+---
+
+
+
+
+
+
+class: center, middle
+
+
+.center[
+
+&lt;br&gt;
+
+
+
+&lt;a href="https://www.joaquibarandica.com" target="_blank"&gt;
+  &lt;img src="img/avatar.png"
+       style="border-radius: 80%; width: 220px; max-width: 30%; height: auto;"
+       alt="Avatar"/&gt;
+&lt;/a&gt;
+
+
+## Orlando Joaqui-Barandica
+
+
+Doctor en Ingeniería, Enf. Ingeniería Industrial **|** Magíster en Economía Aplicada **|** Estadístico.
+
+
+
+<span>&lt;i class="fas  fa-envelope faa-passing animated "&gt;&lt;/i&gt;</span> orlando.joaqui@correounivalle.edu.co 
+]
+
+
+
+.center[
+### [www.joaquibarandica.com](https://www.joaquibarandica.com)
+]
+
+
+
+
+
+
+
+
+
+---
+
+
+# Contenido de la sesión
+
+.pull-left[
+
+### 1. Gestión del riesgo
+
+
+### 2. Riesgo como dato observable
+
+### 3. Hechos estilizados
+
+
+]
+
+.pull-right[
+
+
+
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[La idea central será conectar datos, métricas y decisiones.]
+]
+
+
+---
+
+
+
+class: inverse, center, middle
+
+# 1. De identificar riesgos a gestionarlos
+
+---
+
+# La pregunta cambia
+
+En la sesión anterior la pregunta principal era:
+
+.center[
+.orange[¿qué riesgo tiene este instrumento?]
+]
+
+Ahora la pregunta cambia un poco:
+
+.center[
+.orange[si ya reconozco el riesgo, ¿qué hago con él?]
+]
+
+Porque en riesgo financiero no basta con decir:
+
+- “me afecta el dólar”,
+- “me afecta la tasa”,
+- “me afecta la acción”,
+- “me afecta la liquidez”.
+
+Eso apenas es el punto de partida.
+
+---
+
+# Medir no es lo mismo que gestionar
+
+.pull-left[
+
+### Medir riesgo
+
+Es producir una señal:
+
+- una volatilidad,
+- una pérdida esperada,
+- un VaR,
+- una sensibilidad,
+- una alerta,
+- una exposición.
+
+]
+
+.pull-right[
+
+### Gestionar riesgo
+
+Es decidir qué hacer con esa señal:
+
+- aceptarla,
+- reducirla,
+- cubrirla,
+- monitorearla,
+- reportarla,
+- o cambiar la posición.
+
+]
+
+.center[
+.orange[La medición produce evidencia. La gestión convierte esa evidencia en decisión.]
+]
+
+---
+
+# Una idea importante
+
+Un riesgo no se gestiona en abstracto.
+
+No se dice simplemente:
+
+.center[
+.orange[“tenemos riesgo de mercado”]
+]
+
+Eso es demasiado general.
+
+La pregunta útil es más concreta:
+
+.center[
+.orange[¿qué posición tengo, qué factor la mueve, cuánto podría doler y qué señal debo mirar?]
+]
+
+Ahí empieza a aparecer una lógica más ordenada.
+
+---
+
+# La cadena básica
+
+.center[
+### Instrumento → Exposición → Factor de riesgo → Métrica → Acción
+]
+
+&lt;br&gt;
+
+.pull-left[
+
+### Ejemplo sencillo
+
+Tengo acciones de una empresa.
+
+Eso me deja expuesto al precio de la acción.
+
+El factor de riesgo es el movimiento del mercado accionario.
+
+]
+
+.pull-right[
+
+### ¿Qué podría mirar?
+
+- retornos diarios,
+- volatilidad,
+- pérdidas máximas,
+- drawdown,
+- VaR,
+- señales de estrés.
+
+]
+
+.center[
+.orange[Primero entiendo la exposición. Después elijo la métrica.]
+]
+
+---
+
+# El ciclo de gestión
+
+.center[
+### Identificar → Medir → Monitorear → Controlar → Reportar
+]
+
+&lt;br&gt;
+
+.pull-left[
+
+### Identificar
+
+¿Qué riesgo existe?
+
+¿Qué posición lo genera?
+
+¿Qué factor lo mueve?
+
+]
+
+.pull-right[
+
+### Medir
+
+¿Cómo lo cuantifico?
+
+¿En porcentaje?
+
+¿En dinero?
+
+¿Con sensibilidad?
+
+¿Con escenarios?
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[El ciclo no termina cuando calculo un número. Termina cuando ese número ayuda a decidir.]
+]
+
+---
+
+# El ciclo completo
+
+.pull-left[
+
+### Monitorear
+
+¿El riesgo está aumentando?
+
+¿Cambió el comportamiento?
+
+¿Hay señales anormales?
+
+### Controlar
+
+¿Debo poner límites?
+
+¿Cubrir?
+
+¿Reducir posición?
+
+¿Diversificar?
+
+]
+
+.pull-right[
+
+### Reportar
+
+¿Quién debe saberlo?
+
+¿Qué tan grave es?
+
+¿Qué decisión se recomienda?
+
+¿Qué pasa si no hacemos nada?
+
+]
+
+&lt;br&gt;
+
+.center[
+.green[Gestionar riesgo es construir una conversación entre datos, límites y decisiones.]
+]
+
+---
+
+# De la teoría a una tabla útil
+
+Una forma muy práctica de arrancar la gestión del riesgo es construir una matriz sencilla:
+
+.center[
+.orange[activo, exposición, factor de riesgo, métrica y posible acción]
+]
+
+No es un modelo sofisticado.
+
+Pero ayuda muchísimo porque obliga a ordenar el problema antes de correr código más avanzado.
+
+&lt;br&gt;
+
+.center[
+.green[Antes de medir bien, hay que saber qué se quiere medir.]
+]
+
+---
+
+# Caso guía
+
+Vamos a pensar en cuatro activos muy distintos:
+
+.pull-left[
+
+### Activos
+
+- SPY: acciones de Estados Unidos
+- TLT: bonos largos
+- GLD: oro
+- UUP: dólar
+
+]
+
+.pull-right[
+
+### ¿Por qué sirven?
+
+Porque cada uno puede responder a historias financieras distintas:
+
+- mercado accionario,
+- tasas de interés,
+- refugio,
+- moneda,
+- estrés financiero.
+
+]
+
+.center[
+.orange[La idea no es memorizar qué hace cada activo. La idea es aprender a mapear riesgos.]
+]
+
+---
+
+
+# Una primera matriz de riesgo
+
+
+|activo |descripcion                     |exposicion                     |factor_riesgo                       |metrica_inicial                           |
+|:------|:-------------------------------|:------------------------------|:-----------------------------------|:-----------------------------------------|
+|SPY    |Acciones de Estados Unidos      |Mercado accionario             |Caídas del mercado accionario       |retorno, volatilidad, drawdown            |
+|TLT    |Bonos del Tesoro de largo plazo |Tasa de interés de largo plazo |Aumentos en tasas largas            |retorno, volatilidad, sensibilidad a tasa |
+|GLD    |Oro                             |Precio de commodity/refugio    |Cambios en apetito por refugio      |retorno, volatilidad, cola izquierda      |
+|UUP    |Índice del dólar                |Tipo de cambio / dólar         |Fortalecimiento/debilidad del dólar |retorno, volatilidad, tendencia           |
+
+---
+
+# Cómo leer esta matriz
+
+.pull-left[
+
+### No es una tabla decorativa
+
+Esta tabla obliga a decir con claridad:
+
+- qué activo estoy mirando,
+- qué exposición representa,
+- qué factor lo puede mover,
+- y qué métrica podría ayudar a monitorear.
+
+]
+
+.pull-right[
+
+### ¿Por qué importa?
+
+Porque muchas veces se corre un modelo sin tener claro el problema.
+
+Y cuando eso pasa, el resultado puede verse técnico,  
+pero no necesariamente útil.
+
+]
+
+.center[
+.orange[Un buen análisis de riesgo empieza antes del modelo.]
+]
+
+---
+
+# Una métrica debe tener propósito
+
+No se calcula volatilidad solo porque sí.
+
+No se calcula VaR solo porque sí.
+
+No se hace un gráfico solo porque se ve bonito.
+
+Cada métrica debería responder una pregunta.
+
+.center[
+.orange[¿Qué necesito saber para tomar una decisión?]
+]
+
+---
+
+# Preguntas que sí sirven
+
+.pull-left[
+
+### Sobre comportamiento
+
+- ¿el activo se mueve mucho?
+- ¿tiene caídas extremas?
+- ¿la volatilidad está subiendo?
+- ¿hay periodos de tensión?
+
+]
+
+.pull-right[
+
+### Sobre gestión
+
+- ¿se superó un límite?
+- ¿hay que reducir exposición?
+- ¿hay que cubrir?
+- ¿hay que reportar?
+- ¿hay que mirar el riesgo con otra frecuencia?
+
+]
+
+---
+
+# Límites y alertas
+
+Una parte central de la gestión del riesgo es definir límites.
+
+Un límite no es una predicción.
+
+Es una regla de control.
+
+&lt;br&gt;
+
+.center[
+.orange[Si esta métrica supera cierto nivel, algo debe revisarse.]
+]
+
+&lt;br&gt;
+
+Ejemplos:
+
+- pérdida diaria mayor al 2%,
+- volatilidad móvil superior al 25% anual,
+- drawdown mayor al 10%,
+- exposición cambiaria mayor al límite definido,
+- concentración alta en un solo activo.
+
+---
+
+# Una alerta no significa pánico
+
+Una alerta no quiere decir automáticamente:
+
+.center[
+“vendamos todo”
+]
+
+Quiere decir:
+
+.center[
+.orange[algo cambió y debe revisarse.]
+]
+
+Puede llevar a distintas respuestas:
+
+- revisar datos,
+- mirar si el movimiento fue puntual,
+- reducir exposición,
+- activar cobertura,
+- informar al comité,
+- esperar, si está dentro del apetito de riesgo.
+
+---
+
+
+
+# Reglas de alerta
+
+
+|metrica                      |limite_verde |limite_amarillo |limite_rojo |
+|:----------------------------|:------------|:---------------|:-----------|
+|Pérdida diaria               |menor a 1%   |entre 1% y 2%   |mayor a 2%  |
+|Volatilidad móvil anualizada |menor a 15%  |entre 15% y 25% |mayor a 25% |
+|Drawdown                     |menor a 5%   |entre 5% y 10%  |mayor a 10% |
+|Concentración por activo     |menor a 25%  |entre 25% y 40% |mayor a 40% |
+
+---
+
+# Cómo leer estas reglas
+
+.pull-left[
+
+### Verde
+
+El riesgo está dentro de una zona cómoda.
+
+No significa que no exista riesgo.
+
+Significa que está dentro de lo esperado.
+
+]
+
+.pull-right[
+
+### Amarillo y rojo
+
+Amarillo pide atención.
+
+Rojo pide acción o, al menos, revisión formal.
+
+.center[
+.orange[El color no reemplaza el criterio. Lo organiza.]
+]
+
+]
+
+---
+
+# Un ejemplo de monitoreo
+
+Ahora imaginemos que ya tenemos algunas métricas calculadas para los cuatro activos.
+
+Todavía no estamos estimando VaR formalmente.
+
+Solo queremos construir una primera lectura de monitoreo.
+
+&lt;br&gt;
+
+.center[
+.orange[Esto se parece más a una mesa de riesgo que a una tarea de estadística.]
+]
+
+---
+
+# Datos ilustrativos de monitoreo
+
+
+```r
+monitoreo_base &lt;- tibble(
+  activo = c("SPY", "TLT", "GLD", "UUP"),
+  perdida_diaria = c(0.012, 0.018, 0.006, 0.004),
+  vol_movil = c(0.21, 0.28, 0.17, 0.09),
+  drawdown = c(0.075, 0.125, 0.045, 0.030),
+  concentracion = c(0.40, 0.25, 0.20, 0.15)
+)
+
+monitoreo_base
+```
+
+---
+
+# Datos ilustrativos de monitoreo
+
+
+```
+## # A tibble: 4 × 5
+##   activo perdida_diaria vol_movil drawdown concentracion
+##   &lt;chr&gt;           &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;         &lt;dbl&gt;
+## 1 SPY             0.012      0.21    0.075          0.4 
+## 2 TLT             0.018      0.28    0.125          0.25
+## 3 GLD             0.006      0.17    0.045          0.2 
+## 4 UUP             0.004      0.09    0.03           0.15
+```
+
+---
+
+# Convertir métricas en señales
+
+Una tabla de números ayuda.
+
+Pero una tabla con señales ayuda más a decidir.
+
+Por eso podemos convertir las métricas en un semáforo sencillo.
+
+&lt;br&gt;
+
+.center[
+.orange[La idea no es esconder los números. Es facilitar su lectura.]
+]
+
+---
+
+# Semáforo de riesgo
+
+
+```r
+monitoreo_alertas &lt;- monitoreo_base %&gt;%
+  mutate(
+    alerta_perdida = case_when(
+      perdida_diaria &gt; 0.02 ~ "Rojo",
+      perdida_diaria &gt; 0.01 ~ "Amarillo",
+      TRUE ~ "Verde"
+    ),
+    alerta_vol = case_when(
+      vol_movil &gt; 0.25 ~ "Rojo",
+      vol_movil &gt; 0.15 ~ "Amarillo",
+      TRUE ~ "Verde"
+    ),
+    alerta_drawdown = case_when(
+      drawdown &gt; 0.10 ~ "Rojo",
+      drawdown &gt; 0.05 ~ "Amarillo",
+      TRUE ~ "Verde"
+    ),
+    alerta_concentracion = case_when(
+      concentracion &gt; 0.40 ~ "Rojo",
+      concentracion &gt;= 0.25 ~ "Amarillo",
+      TRUE ~ "Verde"
+    )
+  ) %&gt;%
+  mutate(
+    perdida_diaria = percent(perdida_diaria, accuracy = 0.1),
+    vol_movil = percent(vol_movil, accuracy = 0.1),
+    drawdown = percent(drawdown, accuracy = 0.1),
+    concentracion = percent(concentracion, accuracy = 0.1)
+  )
+
+knitr::kable(monitoreo_alertas)
+```
+
+---
+
+# Semáforo de riesgo
+
+
+|activo |perdida_diaria |vol_movil |drawdown |concentracion |alerta_perdida |alerta_vol |alerta_drawdown |alerta_concentracion |
+|:------|:--------------|:---------|:--------|:-------------|:--------------|:----------|:---------------|:--------------------|
+|SPY    |1.2%           |21.0%     |7.5%     |40.0%         |Amarillo       |Amarillo   |Amarillo        |Amarillo             |
+|TLT    |1.8%           |28.0%     |12.5%    |25.0%         |Amarillo       |Rojo       |Rojo            |Amarillo             |
+|GLD    |0.6%           |17.0%     |4.5%     |20.0%         |Verde          |Amarillo   |Verde           |Verde                |
+|UUP    |0.4%           |9.0%      |3.0%     |15.0%         |Verde          |Verde      |Verde           |Verde                |
+
+---
+
+# Qué nos dice esta tabla
+
+.pull-left[
+
+### TLT llama la atención
+
+Tiene volatilidad móvil alta y drawdown elevado.
+
+Eso sugiere que el riesgo de tasa puede estar pesando bastante.
+
+]
+
+.pull-right[
+
+### SPY también exige cuidado
+
+No necesariamente por volatilidad extrema,  
+sino por concentración y pérdida reciente.
+
+.center[
+.orange[El riesgo no aparece de una sola forma.]
+]
+
+]
+
+---
+
+# La lectura correcta
+
+No se trata de decir:
+
+.center[
+“este activo es bueno” o “este activo es malo”
+]
+
+Esa no es la lectura de riesgo.
+
+La lectura correcta es:
+
+.center[
+.orange[¿qué fuente de riesgo domina y qué decisión debería considerarse?]
+]
+
+Por ejemplo:
+
+- reducir concentración,
+- revisar duración,
+- cubrir exposición,
+- monitorear más de cerca,
+- cambiar frecuencia del reporte.
+
+---
+
+# Riesgo como probabilidad e impacto
+
+Otra forma muy común de ordenar riesgos es pensar en dos dimensiones:
+
+.pull-left[
+
+### Probabilidad
+
+¿Qué tan probable es que el evento ocurra?
+
+]
+
+.pull-right[
+
+### Impacto
+
+Si ocurre, ¿qué tan fuerte puede ser el daño?
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[Un riesgo muy probable pero pequeño no se gestiona igual que uno poco probable pero devastador.]
+]
+
+---
+
+# Mapa simple de riesgo
+
+
+```r
+mapa_prob_impacto &lt;- tibble(
+  riesgo = c(
+    "Caída mercado accionario",
+    "Aumento fuerte de tasas",
+    "Apreciación del dólar",
+    "Caída del oro"
+  ),
+  activo = c("SPY", "TLT", "UUP", "GLD"),
+  probabilidad = c(4, 3, 2, 2),
+  impacto = c(4, 5, 3, 2)
+)
+
+ggplot(mapa_prob_impacto,
+       aes(x = probabilidad, y = impacto, size = impacto)) +
+  geom_point(alpha = 0.7) +
+  geom_text(aes(label = activo), nudge_y = 0.15, check_overlap = TRUE) +
+  scale_x_continuous(breaks = 1:5, limits = c(1, 5)) +
+  scale_y_continuous(breaks = 1:5, limits = c(1, 5)) +
+  labs(
+    title = "Mapa simple de riesgo",
+    x = "Probabilidad",
+    y = "Impacto"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+```
+
+---
+
+# Mapa simple de riesgo
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-9-1.png" width="70%" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Cómo leer el mapa
+
+.pull-left[
+
+### Arriba y a la derecha
+
+Riesgos más importantes.
+
+No solo porque pueden ocurrir,  
+sino porque si ocurren duelen bastante.
+
+]
+
+.pull-right[
+
+### Abajo y a la izquierda
+
+Riesgos menos urgentes.
+
+No desaparecen.
+
+Pero probablemente no son la prioridad inmediata.
+
+]
+
+.center[
+.orange[El mapa ayuda a ordenar prioridades, no a predecir el futuro.]
+]
+
+---
+
+# ¿Qué se puede hacer frente al riesgo?
+
+No todo riesgo debe eliminarse.
+
+En finanzas, asumir riesgo también puede ser parte del negocio.
+
+Lo importante es decidir qué riesgo tiene sentido conservar y cuál debe tratarse.
+
+&lt;br&gt;
+
+.center[
+.orange[Gestionar riesgo no es vivir sin riesgo. Es asumirlo con criterio.]
+]
+
+---
+
+# Cuatro respuestas posibles
+
+.pull-left[
+
+### Aceptar
+
+El riesgo está dentro del apetito definido.
+
+### Reducir
+
+Se baja la exposición o se diversifica.
+
+]
+
+.pull-right[
+
+### Transferir o cubrir
+
+Se usa un instrumento para limitar el impacto.
+
+### Evitar
+
+Se decide no tomar esa posición.
+
+]
+
+&lt;br&gt;
+
+.center[
+.green[La respuesta depende del tamaño, la frecuencia, el impacto y el objetivo financiero.]
+]
+
+---
+
+
+
+# Instrumentos de manejo
+
+
+|herramienta            |pregunta_que_responde                               |ejemplo                                  |
+|:----------------------|:---------------------------------------------------|:----------------------------------------|
+|Límites                |¿Hasta dónde acepto exposición o pérdida?           |No perder más de 2% diario               |
+|Diversificación        |¿Puedo repartir el riesgo?                          |No concentrar todo en un solo activo     |
+|Cobertura              |¿Puedo reducir el impacto de un factor?             |Usar forwards, futuros, opciones o swaps |
+|Liquidez preventiva    |¿Tengo margen para resistir movimientos adversos?   |Mantener caja o activos líquidos         |
+|Reporte y escalamiento |¿Quién debe enterarse y cuándo?                     |Reporte si se activa una alerta roja     |
+|Validación de modelos  |¿Estoy midiendo bien o el modelo me está engañando? |Comparar supuestos, datos y excepciones  |
+
+---
+
+# Una idea para no perder
+
+.pull-left[
+
+### El modelo ayuda
+
+Un modelo puede estimar:
+
+- volatilidad,
+- VaR,
+- ES,
+- escenarios,
+- sensibilidad,
+- pérdidas esperadas.
+
+]
+
+.pull-right[
+
+### Pero no decide solo
+
+La decisión requiere:
+
+- contexto,
+- límites,
+- liquidez,
+- horizonte,
+- apetito de riesgo,
+- consecuencias de equivocarse.
+
+]
+
+.center[
+.orange[El número es una parte de la decisión, no la decisión completa.]
+]
+
+---
+
+
+
+# Actividad
+
+Con un activo o instrumento financiero, construir una mini matriz de gestión:
+
+1. ¿Cuál es el instrumento?
+2. ¿Cuál es la exposición?
+3. ¿Qué factor de riesgo lo mueve?
+4. ¿Qué métrica inicial serviría para monitorearlo?
+5. ¿Qué alerta tendría sentido?
+6. ¿Qué acción podría considerarse si la alerta se activa?
+
+&lt;br&gt;
+
+.center[
+.orange[La respuesta no tiene que ser perfecta. Tiene que ser financieramente razonable.]
+]
+
+---
+
+
+
+# Plantilla para la actividad
+
+
+|instrumento |exposicion |factor_riesgo |metrica_monitoreo |alerta |posible_accion |
+|:-----------|:----------|:-------------|:-----------------|:------|:--------------|
+|            |           |              |                  |       |               |
+
+---
+
+
+# El siguiente paso
+
+Para medir riesgo necesitamos transformar el movimiento financiero en una variable observable.
+
+Y ahí aparece una decisión muy importante:
+
+.center[
+.orange[¿trabajamos con precios, retornos o P&amp;L?]
+]
+
+Esa decisión parece pequeña,  
+pero cambia completamente la forma en que vemos el riesgo.
+
+
+
+
+
+---
+
+
+
+class: inverse, center, middle
+
+# 2. Del riesgo financiero al dato observable
+
+---
+
+# El riesgo necesita una variable
+
+En riesgo financiero no basta con decir:
+
+.center[
+.orange[“este activo puede caer”]
+]
+
+Eso es una intuición.
+
+Para analizarlo necesitamos convertir esa intuición en una variable que podamos observar, calcular y monitorear.
+
+&lt;br&gt;
+
+.center[
+### Precio → Retorno → Pérdida → Señal de riesgo
+]
+
+&lt;br&gt;
+
+La gestión empieza a volverse más concreta cuando el riesgo se puede mirar en datos.
+
+---
+
+# La pregunta clave
+
+Cuando analizamos un instrumento financiero, hay varias formas de representar su comportamiento.
+
+.center[
+.orange[¿miramos precios, retornos o pérdidas monetarias?]
+]
+
+&lt;br&gt;
+
+Cada opción responde una pregunta distinta.
+
+.pull-left[
+
+### Precio
+
+¿Cuánto vale el activo?
+
+]
+
+.pull-right[
+
+### Retorno
+
+¿Cuánto cambió en términos relativos?
+
+]
+
+.center[
+### P&amp;L  
+¿Cuánto gané o perdí en dinero?
+]
+
+---
+
+# No es lo mismo mirar precio que mirar riesgo
+
+Un precio alto no significa necesariamente más riesgo.
+
+Un precio bajo tampoco significa necesariamente menos riesgo.
+
+Lo que usualmente preocupa en riesgo financiero es:
+
+.center[
+.orange[qué tanto cambia el valor de una posición y cuánto podría perderse.]
+]
+
+&lt;br&gt;
+
+Por eso, muchas veces el análisis de riesgo no trabaja directamente con precios, sino con:
+
+- retornos,
+- pérdidas,
+- volatilidad,
+- drawdowns,
+- escenarios,
+- colas de la distribución.
+
+---
+
+# Ejemplo intuitivo
+
+.pull-left[
+
+### Acción A
+
+Pasa de 100 a 105.
+
+Subió 5 pesos.
+
+]
+
+.pull-right[
+
+### Acción B
+
+Pasa de 10 a 15.
+
+Subió 5 pesos.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[¿Tuvieron el mismo comportamiento?]
+]
+
+&lt;br&gt;
+
+No.
+
+La Acción A subió 5%.
+
+La Acción B subió 50%.
+
+El cambio en pesos fue igual, pero el cambio relativo fue completamente distinto.
+
+---
+
+# Por eso usamos retornos
+
+El retorno permite comparar activos con precios diferentes.
+
+.center[
+### Retorno simple
+]
+
+.center[
+`$$R_t = \frac{P_t - P_{t-1}}{P_{t-1}}$$`
+]
+
+&lt;br&gt;
+
+También puede escribirse como:
+
+.center[
+`$$R_t = \frac{P_t}{P_{t-1}} - 1$$`
+]
+
+&lt;br&gt;
+
+La idea es sencilla:
+
+.center[
+.orange[el retorno mide cuánto cambió el precio respecto al precio anterior.]
+]
+
+---
+
+# Lectura del retorno simple
+
+Si el precio pasa de 100 a 105:
+
+.center[
+`$$R_t = \frac{105}{100} - 1 = 0.05$$`
+]
+
+&lt;br&gt;
+
+Eso significa:
+
+.center[
+.orange[el activo ganó 5% en ese periodo.]
+]
+
+&lt;br&gt;
+
+Si pasa de 100 a 95:
+
+.center[
+`$$R_t = \frac{95}{100} - 1 = -0.05$$`
+]
+
+&lt;br&gt;
+
+Eso significa:
+
+.center[
+.orange[el activo perdió 5% en ese periodo.]
+]
+
+---
+
+# Retorno logarítmico
+
+También es común usar retornos logarítmicos:
+
+.center[
+`$$r_t = \log(P_t) - \log(P_{t-1})$$`
+]
+
+o equivalentemente:
+
+.center[
+`$$r_t = \log\left(\frac{P_t}{P_{t-1}}\right)$$`
+]
+
+&lt;br&gt;
+
+En la práctica, para cambios pequeños, el retorno simple y el log-retorno se parecen bastante.
+
+Pero el log-retorno tiene ventajas cuando se agregan retornos en el tiempo.
+
+---
+
+# ¿Cuál usar?
+
+.pull-left[
+
+### Retorno simple
+
+Más intuitivo.
+
+Sirve muy bien para explicar ganancias o pérdidas porcentuales.
+
+Es natural para reportes financieros.
+
+]
+
+.pull-right[
+
+### Retorno logarítmico
+
+Muy usado en modelación.
+
+Facilita agregación temporal.
+
+Aparece mucho en series financieras y modelos de riesgo.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[En gestión, lo importante es entender qué representa cada uno y no usarlos mecánicamente.]
+]
+
+---
+
+# Primero cargamos paquetes
+
+Vamos a trabajar con cuatro activos que tienen historias financieras distintas:
+
+- **SPY**: mercado accionario de Estados Unidos.
+- **TLT**: bonos del Tesoro de largo plazo.
+- **GLD**: oro.
+- **UUP**: índice del dólar.
+
+&lt;br&gt;
+
+La idea es observar cómo se comportan en precios, retornos y pérdidas.
+
+---
+
+# Paquetes de trabajo
+
+
+```r
+# Paquetes para manipular datos, descargar precios y graficar
+library(tidyverse)
+library(tidyquant)
+library(lubridate)
+library(scales)
+library(knitr)
+library(slider)
+```
+
+---
+
+# Definimos los activos
+
+
+```r
+# Activos para el ejercicio
+activos &lt;- c("SPY", "TLT", "GLD", "UUP")
+
+# Nombres más claros para reportar
+nombres_activos &lt;- tibble(
+  symbol = c("SPY", "TLT", "GLD", "UUP"),
+  nombre = c(
+    "Acciones EE.UU.",
+    "Bonos largo plazo",
+    "Oro",
+    "Dólar"
+  )
+)
+
+nombres_activos
+```
+
+---
+
+# Definimos los activos
+
+
+|symbol |nombre            |
+|:------|:-----------------|
+|SPY    |Acciones EE.UU.   |
+|TLT    |Bonos largo plazo |
+|GLD    |Oro               |
+|UUP    |Dólar             |
+
+---
+
+# Descarga de precios
+
+
+```r
+# Descargamos precios desde Yahoo Finance
+precios &lt;- tq_get(
+  activos,
+  from = "2020-01-01",
+  to   = Sys.Date(),
+  get  = "stock.prices"
+)
+
+glimpse(precios)
+```
+
+---
+
+# Estructura de los datos
+
+
+```
+## Rows: 6,332
+## Columns: 8
+## $ symbol   &lt;chr&gt; "SPY", "SPY", "SPY", "SPY", "SPY", "SPY", "SPY", "SPY", "SPY"…
+## $ date     &lt;date&gt; 2020-01-02, 2020-01-03, 2020-01-06, 2020-01-07, 2020-01-08, …
+## $ open     &lt;dbl&gt; 323.54, 321.16, 320.49, 323.02, 322.94, 326.16, 327.29, 326.3…
+## $ high     &lt;dbl&gt; 324.89, 323.64, 323.73, 323.54, 325.78, 326.73, 327.46, 327.9…
+## $ low      &lt;dbl&gt; 322.53, 321.10, 320.36, 322.24, 322.67, 325.52, 325.20, 325.9…
+## $ close    &lt;dbl&gt; 324.87, 322.41, 323.64, 322.73, 324.45, 326.65, 325.71, 327.9…
+## $ volume   &lt;dbl&gt; 59151200, 77709700, 55653900, 40496400, 68296000, 48473300, 5…
+## $ adjusted &lt;dbl&gt; 296.8881, 294.6400, 295.7642, 294.9326, 296.5044, 298.5149, 2…
+```
+
+---
+
+# ¿Qué contiene la base?
+
+Cuando descargamos precios financieros usualmente aparecen varias columnas:
+
+.pull-left[
+
+### Columnas principales
+
+- `date`
+- `open`
+- `high`
+- `low`
+- `close`
+- `volume`
+- `adjusted`
+
+]
+
+.pull-right[
+
+### Para riesgo
+
+La columna más útil suele ser:
+
+.center[
+.orange[`adjusted`]
+]
+
+Porque incorpora ajustes por dividendos, splits y otros eventos corporativos.
+
+]
+
+&lt;br&gt;
+
+.center[
+.green[Para calcular retornos, normalmente trabajamos con precios ajustados.]
+]
+
+---
+
+# Primer vistazo a los precios
+
+
+```r
+precios_limpios &lt;- precios %&gt;%
+  select(symbol, date, adjusted) %&gt;%
+  left_join(nombres_activos, by = "symbol")
+
+head(precios_limpios)
+```
+
+---
+
+# Primer vistazo a los precios
+
+
+|symbol |date       | adjusted|nombre          |
+|:------|:----------|--------:|:---------------|
+|SPY    |2020-01-02 | 296.8881|Acciones EE.UU. |
+|SPY    |2020-01-03 | 294.6400|Acciones EE.UU. |
+|SPY    |2020-01-06 | 295.7642|Acciones EE.UU. |
+|SPY    |2020-01-07 | 294.9326|Acciones EE.UU. |
+|SPY    |2020-01-08 | 296.5044|Acciones EE.UU. |
+|SPY    |2020-01-09 | 298.5149|Acciones EE.UU. |
+|SPY    |2020-01-10 | 297.6558|Acciones EE.UU. |
+|SPY    |2020-01-13 | 299.7029|Acciones EE.UU. |
+|SPY    |2020-01-14 | 299.2460|Acciones EE.UU. |
+|SPY    |2020-01-15 | 299.9222|Acciones EE.UU. |
+
+---
+
+# El precio cuenta una historia
+
+El precio permite ver la trayectoria del activo.
+
+Pero todavía no nos dice directamente qué tan riesgoso fue.
+
+&lt;br&gt;
+
+.center[
+.orange[El precio muestra el nivel. El retorno muestra el movimiento.]
+]
+
+&lt;br&gt;
+
+Primero miremos los precios.
+
+---
+
+# Código: precios ajustados
+
+
+```r
+ggplot(precios_limpios,
+       aes(x = date, y = adjusted, color = nombre)) +
+  geom_line(linewidth = 0.7) +
+  facet_wrap(~ nombre, scales = "free_y", ncol = 2) +
+  labs(
+    title = "Precios ajustados",
+    subtitle = "Cada activo se muestra con su propia escala",
+    x = "",
+    y = "Precio ajustado",
+    color = ""
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+```
+
+---
+
+# Precios ajustados
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-20-1.png" width="70%" /&gt;
+
+---
+
+# Cómo leer este gráfico
+
+.pull-left[
+
+### Qué sí muestra
+
+- tendencia del precio,
+- caídas fuertes,
+- recuperaciones,
+- periodos de estrés,
+- diferencias visuales entre activos.
+
+]
+
+.pull-right[
+
+### Qué no muestra tan bien
+
+- magnitud comparable del riesgo,
+- pérdidas porcentuales,
+- volatilidad relativa,
+- distribución de cambios,
+- colas extremas.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[Para comparar riesgo entre activos, necesitamos pasar de precios a retornos.]
+]
+
+---
+
+# Cuidado con las escalas
+
+En el gráfico anterior usamos escalas libres.
+
+Eso ayuda a ver la historia de cada activo.
+
+Pero también puede confundir.
+
+&lt;br&gt;
+
+.center[
+.orange[Dos gráficos pueden verse igual de movidos, aunque sus riesgos sean muy diferentes.]
+]
+
+&lt;br&gt;
+
+Por eso, además del precio, necesitamos una medida comparable.
+
+---
+
+# Precio indexado
+
+Una alternativa útil es indexar todos los precios a 100.
+
+Así podemos ver qué habría pasado si todos empezaran con el mismo valor.
+
+&lt;br&gt;
+
+.center[
+.orange[Esto no es todavía retorno diario, pero ya permite comparar trayectorias.]
+]
+
+---
+
+# Código: precios indexados
+
+
+```r
+precios_indexados &lt;- precios_limpios %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  arrange(date) %&gt;%
+  mutate(
+    precio_inicial = first(adjusted),
+    indice_100 = adjusted / precio_inicial * 100
+  ) %&gt;%
+  ungroup()
+
+ggplot(precios_indexados,
+       aes(x = date, y = indice_100, color = nombre)) +
+  geom_line(linewidth = 0.8) +
+  labs(
+    title = "Precios indexados a 100",
+    subtitle = "Todos los activos empiezan en el mismo punto",
+    x = "",
+    y = "Índice base 100",
+    color = ""
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+# Precios indexados
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-22-1.png" width="80%" /&gt;
+
+---
+
+# Cómo leer el índice base 100
+
+.pull-left[
+
+### Si el índice llega a 150
+
+El activo acumuló una ganancia aproximada de 50% desde el inicio.
+
+]
+
+.pull-right[
+
+### Si el índice cae a 80
+
+El activo acumuló una pérdida aproximada de 20% desde el inicio.
+
+]
+
+&lt;br&gt;
+
+.center[
+.green[Esto ya se acerca más a una lectura de desempeño y riesgo.]
+]
+
+---
+
+# Pero aún falta algo
+
+El índice base 100 muestra el resultado acumulado.
+
+Pero no muestra claramente el camino diario.
+
+Dos activos pueden terminar en el mismo punto, pero con experiencias muy distintas.
+
+&lt;br&gt;
+
+.center[
+.orange[En riesgo importa el camino, no solo el punto final.]
+]
+
+&lt;br&gt;
+
+Por eso calculamos retornos.
+
+---
+
+# Cálculo de retornos simples
+
+
+```r
+retornos &lt;- precios_limpios %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  arrange(date) %&gt;%
+  mutate(
+    ret_simple = adjusted / lag(adjusted) - 1
+  ) %&gt;%
+  ungroup() %&gt;%
+  drop_na(ret_simple)
+
+head(retornos)
+```
+
+---
+
+# Retornos simples
+
+
+|symbol |nombre            |date       |  adjusted|ret_simple |
+|:------|:-----------------|:----------|---------:|:----------|
+|SPY    |Acciones EE.UU.   |2020-01-03 | 294.64005|-0.76%     |
+|TLT    |Bonos largo plazo |2020-01-03 | 115.92470|1.54%      |
+|GLD    |Oro               |2020-01-03 | 145.86000|1.33%      |
+|UUP    |Dólar             |2020-01-03 |  22.49221|0.12%      |
+|SPY    |Acciones EE.UU.   |2020-01-06 | 295.76419|0.38%      |
+|TLT    |Bonos largo plazo |2020-01-06 | 115.26646|-0.57%     |
+|GLD    |Oro               |2020-01-06 | 147.39000|1.05%      |
+|UUP    |Dólar             |2020-01-06 |  22.44048|-0.23%     |
+|SPY    |Acciones EE.UU.   |2020-01-07 | 294.93256|-0.28%     |
+|TLT    |Bonos largo plazo |2020-01-07 | 114.69979|-0.49%     |
+
+---
+
+# Qué significa esta tabla
+
+Cada fila responde una pregunta:
+
+.center[
+.orange[¿cuánto cambió el activo frente al día anterior?]
+]
+
+&lt;br&gt;
+
+Si el retorno es positivo, el activo subió.
+
+Si el retorno es negativo, el activo cayó.
+
+Si el retorno es cercano a cero, el movimiento fue pequeño.
+
+&lt;br&gt;
+
+.center[
+.green[La lectura ya no depende del nivel del precio, sino del cambio relativo.]
+]
+
+---
+
+# Cálculo de log-retornos
+
+
+```r
+retornos &lt;- retornos %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  arrange(date) %&gt;%
+  mutate(
+    ret_log = log(adjusted) - log(lag(adjusted))
+  ) %&gt;%
+  ungroup() %&gt;%
+  drop_na(ret_log)
+
+head(retornos)
+```
+
+---
+
+# Retornos simples y logarítmicos
+
+
+|symbol |nombre            |date       |ret_simple |ret_log |
+|:------|:-----------------|:----------|:----------|:-------|
+|SPY    |Acciones EE.UU.   |2020-01-03 |-0.76%     |-0.76%  |
+|TLT    |Bonos largo plazo |2020-01-03 |1.54%      |1.53%   |
+|GLD    |Oro               |2020-01-03 |1.33%      |1.32%   |
+|UUP    |Dólar             |2020-01-03 |0.12%      |0.12%   |
+|SPY    |Acciones EE.UU.   |2020-01-06 |0.38%      |0.38%   |
+|TLT    |Bonos largo plazo |2020-01-06 |-0.57%     |-0.57%  |
+|GLD    |Oro               |2020-01-06 |1.05%      |1.04%   |
+|UUP    |Dólar             |2020-01-06 |-0.23%     |-0.23%  |
+|SPY    |Acciones EE.UU.   |2020-01-07 |-0.28%     |-0.28%  |
+|TLT    |Bonos largo plazo |2020-01-07 |-0.49%     |-0.49%  |
+
+---
+
+# Comparando ambos retornos
+
+En movimientos diarios, el retorno simple y el log-retorno suelen ser muy parecidos.
+
+Pero no son exactamente iguales.
+
+&lt;br&gt;
+
+.center[
+.orange[La diferencia se vuelve más visible cuando los movimientos son grandes.]
+]
+
+&lt;br&gt;
+
+Miremos esa comparación.
+
+---
+
+# Código: retorno simple vs log-retorno
+
+
+```r
+ggplot(retornos,
+       aes(x = ret_simple, y = ret_log)) +
+  geom_point(alpha = 0.25) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  facet_wrap(~ nombre, scales = "free") +
+  scale_x_continuous(labels = percent_format(accuracy = 1)) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retorno simple vs log-retorno",
+    subtitle = "La línea punteada representa igualdad aproximada",
+    x = "Retorno simple",
+    y = "Log-retorno"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+# Retorno simple vs log-retorno
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-28-1.png" width="70%" /&gt;
+
+---
+
+# Qué mirar en este gráfico
+
+.pull-left[
+
+### Cerca de la línea
+
+Los dos retornos son prácticamente iguales.
+
+Eso pasa con la mayoría de movimientos diarios pequeños.
+
+]
+
+.pull-right[
+
+### Lejos de la línea
+
+Aparecen diferencias mayores.
+
+Normalmente ocurre cuando hay movimientos extremos.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[En el día a día se parecen, pero conceptualmente no son lo mismo.]
+]
+
+---
+
+# Visualicemos los retornos
+
+Ahora el foco ya no es el precio.
+
+El foco es la variación diaria.
+
+&lt;br&gt;
+
+.center[
+.orange[El gráfico de retornos muestra mejor cuándo el mercado estuvo tranquilo y cuándo estuvo turbulento.]
+]
+
+---
+
+# Código: retornos diarios
+
+
+```r
+ggplot(retornos,
+       aes(x = date, y = ret_simple, color = nombre)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.4, alpha = 0.8) +
+  facet_wrap(~ nombre, ncol = 2) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retornos diarios",
+    subtitle = "Cambios porcentuales diarios de cada activo",
+    x = "",
+    y = "Retorno diario",
+    color = ""
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+```
+
+---
+
+# Retornos diarios
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-30-1.png" width="70%" /&gt;
+
+---
+
+# Cómo leer los retornos diarios
+
+.pull-left[
+
+### Periodos tranquilos
+
+Los retornos se mueven cerca de cero.
+
+Las barras o líneas se ven comprimidas.
+
+Hay pocas variaciones extremas.
+
+]
+
+.pull-right[
+
+### Periodos turbulentos
+
+Los retornos se alejan de cero.
+
+Aparecen saltos positivos y negativos.
+
+La nube se vuelve más amplia.
+
+]
+
+&lt;br&gt;
+
+.center[
+.green[Esto anticipa una idea central: la volatilidad cambia en el tiempo.]
+]
+
+---
+
+# Precio, retorno y pérdida
+
+Hasta ahora hablamos de retornos.
+
+Pero una pérdida de 2% no duele igual en todos los casos.
+
+Depende del tamaño de la posición.
+
+&lt;br&gt;
+
+.center[
+.orange[El retorno mide porcentaje. El P&amp;L mide dinero.]
+]
+
+---
+
+# Un ejemplo simple
+
+Supongamos dos posiciones:
+
+.pull-left[
+
+### Posición A
+
+Invierto 1 millón.
+
+Pierdo 2%.
+
+La pérdida es 20 mil.
+
+]
+
+.pull-right[
+
+### Posición B
+
+Invierto 100 millones.
+
+Pierdo 2%.
+
+La pérdida es 2 millones.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[El retorno es el mismo. El impacto económico no.]
+]
+
+---
+
+# Definimos posiciones hipotéticas
+
+Vamos a suponer una posición inicial en cada activo.
+
+No es una recomendación de inversión.
+
+Solo sirve para transformar retornos en pérdidas monetarias.
+
+---
+
+# Código: posiciones
+
+
+```r
+posiciones &lt;- tibble(
+  symbol = c("SPY", "TLT", "GLD", "UUP"),
+  posicion_usd = c(400000, 250000, 200000, 150000)
+)
+
+posiciones
+```
+
+---
+
+# Posiciones hipotéticas
+
+
+|symbol |nombre            |posicion_usd |
+|:------|:-----------------|:------------|
+|SPY    |Acciones EE.UU.   |$400,000     |
+|TLT    |Bonos largo plazo |$250,000     |
+|GLD    |Oro               |$200,000     |
+|UUP    |Dólar             |$150,000     |
+
+---
+
+# Cálculo de P&amp;L diario
+
+Si tengo una posición en dólares y el activo tiene un retorno diario, el P&amp;L aproximado es:
+
+.center[
+`$$P\&amp;L_t \approx \text{posición} \times R_t$$`
+]
+
+&lt;br&gt;
+
+Si el retorno es negativo, el P&amp;L es negativo.
+
+Si el retorno es positivo, el P&amp;L es positivo.
+
+&lt;br&gt;
+
+.center[
+.orange[Ahora el riesgo empieza a verse en dinero.]
+]
+
+---
+
+# Código: P&amp;L diario
+
+
+```r
+retornos_pnl &lt;- retornos %&gt;%
+  left_join(posiciones, by = "symbol") %&gt;%
+  mutate(
+    pnl_diario = posicion_usd * ret_simple,
+    perdida_diaria = -pnl_diario
+  )
+
+head(retornos_pnl)
+```
+
+---
+
+# P&amp;L diario
+
+
+|symbol |nombre            |date       |ret_simple |posicion_usd |pnl_diario |
+|:------|:-----------------|:----------|:----------|:------------|:----------|
+|SPY    |Acciones EE.UU.   |2020-01-03 |-0.76%     |$400,000     |-$3,028.81 |
+|TLT    |Bonos largo plazo |2020-01-03 |1.54%      |$250,000     |$3,850.03  |
+|GLD    |Oro               |2020-01-03 |1.33%      |$200,000     |$2,653.70  |
+|UUP    |Dólar             |2020-01-03 |0.12%      |$150,000     |$172.68    |
+|SPY    |Acciones EE.UU.   |2020-01-06 |0.38%      |$400,000     |$1,526.13  |
+|TLT    |Bonos largo plazo |2020-01-06 |-0.57%     |$250,000     |-$1,419.54 |
+|GLD    |Oro               |2020-01-06 |1.05%      |$200,000     |$2,097.90  |
+|UUP    |Dólar             |2020-01-06 |-0.23%     |$150,000     |-$344.96   |
+|SPY    |Acciones EE.UU.   |2020-01-07 |-0.28%     |$400,000     |-$1,124.73 |
+|TLT    |Bonos largo plazo |2020-01-07 |-0.49%     |$250,000     |-$1,229.03 |
+
+---
+
+# Cómo leer el P&amp;L
+
+.pull-left[
+
+### P&amp;L positivo
+
+La posición ganó dinero ese día.
+
+No necesariamente significa que el activo sea “seguro”.
+
+Solo dice que ese día favoreció a la posición.
+
+]
+
+.pull-right[
+
+### P&amp;L negativo
+
+La posición perdió dinero ese día.
+
+En gestión de riesgo, estos días son especialmente importantes.
+
+.center[
+.orange[El riesgo se siente en los días negativos.]
+]
+
+]
+
+---
+
+# Visualicemos el P&amp;L
+
+
+```r
+ggplot(retornos_pnl,
+       aes(x = date, y = pnl_diario, color = nombre)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.4, alpha = 0.8) +
+  facet_wrap(~ nombre, ncol = 2, scales = "free_y") +
+  scale_y_continuous(labels = dollar_format()) +
+  labs(
+    title = "P&amp;L diario por activo",
+    subtitle = "Pérdidas y ganancias aproximadas según la posición definida",
+    x = "",
+    y = "P&amp;L diario",
+    color = ""
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+```
+
+---
+
+# P&amp;L diario por activo
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-36-1.png" width="95%" /&gt;
+
+---
+
+# Lo que cambia con P&amp;L
+
+El gráfico de retornos permite comparar movimientos porcentuales.
+
+El gráfico de P&amp;L muestra impacto monetario.
+
+&lt;br&gt;
+
+.center[
+.orange[Un activo con menor retorno extremo puede generar más pérdida si la posición es más grande.]
+]
+
+&lt;br&gt;
+
+Por eso en gestión de riesgo no basta con mirar el activo.
+
+También importa:
+
+- tamaño de la posición,
+- concentración,
+- horizonte,
+- liquidez,
+- capacidad de absorber pérdidas.
+
+---
+
+# Resumen por activo
+
+Ahora construyamos una tabla muy simple.
+
+Todavía no es VaR formal.
+
+Pero ya permite ver señales iniciales:
+
+- retorno promedio,
+- peor retorno diario,
+- mejor retorno diario,
+- volatilidad diaria,
+- peor P&amp;L diario,
+- P&amp;L acumulado.
+
+---
+
+
+# Resumen inicial de riesgo
+
+
+|symbol |nombre            |retorno_promedio |volatilidad_diaria |peor_retorno |mejor_retorno |peor_pnl    |pnl_acumulado |
+|:------|:-----------------|:----------------|:------------------|:------------|:-------------|:-----------|:-------------|
+|GLD    |Oro               |0.08%            |1.14%              |-10.27%      |6.36%         |-$20,548.49 |$239,257      |
+|SPY    |Acciones EE.UU.   |0.06%            |1.29%              |-10.94%      |10.50%        |-$43,769.48 |$398,344      |
+|TLT    |Bonos largo plazo |-0.01%           |1.06%              |-6.67%       |7.52%         |-$16,670.62 |-$46,957      |
+|UUP    |Dólar             |0.01%            |0.47%              |-3.21%       |3.78%         |-$4,810.50  |$32,775       |
+
+---
+
+# Cómo leer esta tabla
+
+.pull-left[
+
+### Volatilidad diaria
+
+Muestra qué tanto varían los retornos día a día.
+
+Más volatilidad implica más incertidumbre alrededor del resultado diario.
+
+]
+
+.pull-right[
+
+### Peor retorno
+
+Muestra el peor día observado en la muestra.
+
+No predice el futuro, pero deja ver qué tan fuerte ha sido una caída histórica.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[Esta tabla ya empieza a parecer un reporte de riesgo.]
+]
+
+---
+
+# Pérdida vs retorno
+
+La pérdida puede expresarse de dos formas:
+
+.pull-left[
+
+### En porcentaje
+
+Una caída de 3%.
+
+Sirve para comparar activos.
+
+]
+
+.pull-right[
+
+### En dinero
+
+Una pérdida de 25.000 dólares.
+
+Sirve para tomar decisiones reales.
+
+]
+
+&lt;br&gt;
+
+.center[
+.green[El porcentaje ayuda a comparar. El dinero ayuda a gestionar.]
+]
+
+---
+
+# Top de peores días
+
+Una forma muy directa de entender riesgo es mirar los peores días.
+
+No es una metodología completa.
+
+Pero ayuda a aterrizar el problema.
+
+&lt;br&gt;
+
+.center[
+.orange[Antes de hablar de colas, miremos algunos días que quedaron en la cola izquierda.]
+]
+
+---
+
+# Código: peores días por activo
+
+
+```r
+peores_dias &lt;- retornos_pnl %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  slice_min(order_by = ret_simple, n = 5, with_ties = FALSE) %&gt;%
+  ungroup() %&gt;%
+  arrange(nombre, ret_simple)
+
+peores_dias
+```
+
+---
+
+# Peores días por activo
+
+
+|nombre            |date       |ret_simple |pnl_diario  |
+|:-----------------|:----------|:----------|:-----------|
+|Acciones EE.UU.   |2020-03-16 |-10.94%    |-$43,769.48 |
+|Acciones EE.UU.   |2020-03-12 |-9.57%     |-$38,270.95 |
+|Acciones EE.UU.   |2020-03-09 |-7.81%     |-$31,237.85 |
+|Acciones EE.UU.   |2025-04-04 |-5.85%     |-$23,417.12 |
+|Acciones EE.UU.   |2020-06-11 |-5.76%     |-$23,059.60 |
+|Bonos largo plazo |2020-03-17 |-6.67%     |-$16,670.62 |
+|Bonos largo plazo |2020-03-18 |-5.64%     |-$14,103.26 |
+|Bonos largo plazo |2020-03-10 |-5.13%     |-$12,814.37 |
+|Bonos largo plazo |2020-03-11 |-3.68%     |-$9,199.46  |
+|Bonos largo plazo |2022-03-02 |-3.42%     |-$8,545.58  |
+|Dólar             |2020-03-16 |-3.21%     |-$4,810.50  |
+|Dólar             |2022-11-10 |-2.29%     |-$3,428.58  |
+|Dólar             |2025-04-10 |-2.09%     |-$3,128.31  |
+|Dólar             |2022-11-04 |-1.88%     |-$2,812.51  |
+|Dólar             |2025-04-03 |-1.76%     |-$2,636.21  |
+|Oro               |2026-01-30 |-10.27%    |-$20,548.49 |
+|Oro               |2025-10-21 |-6.43%     |-$12,853.78 |
+|Oro               |2020-08-11 |-5.37%     |-$10,738.88 |
+|Oro               |2026-03-03 |-4.46%     |-$8,922.44  |
+|Oro               |2020-11-09 |-4.43%     |-$8,854.20  |
+
+---
+
+# Qué nos dicen los peores días
+
+.pull-left[
+
+### Mirada histórica
+
+Estos son los episodios más adversos dentro de la muestra.
+
+Ayudan a reconocer el tamaño de movimientos extremos observados.
+
+]
+
+.pull-right[
+
+### Cuidado
+
+Que algo no haya ocurrido en la muestra no significa que no pueda ocurrir.
+
+La historia guía, pero no encierra todos los escenarios posibles.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[Esta intuición será clave cuando lleguemos a VaR histórico y stress testing.]
+]
+
+---
+
+# Pérdidas como número positivo
+
+En riesgo, muchas veces se trabaja con pérdidas como valores positivos.
+
+Es decir:
+
+.center[
+`$$\text{Pérdida}_t = -P\&amp;L_t$$`
+]
+
+&lt;br&gt;
+
+Si el P&amp;L es -10.000, la pérdida es 10.000.
+
+Esto facilita hablar de “pérdidas grandes”.
+
+---
+
+# Código: pérdidas diarias positivas
+
+
+```r
+perdidas &lt;- retornos_pnl %&gt;%
+  mutate(
+    perdida_usd = if_else(pnl_diario &lt; 0, -pnl_diario, 0)
+  )
+
+head(perdidas)
+```
+
+---
+
+# Pérdidas diarias positivas
+
+
+|symbol |nombre            |date       |pnl_diario |perdida_usd |
+|:------|:-----------------|:----------|:----------|:-----------|
+|SPY    |Acciones EE.UU.   |2020-01-03 |-$3,028.81 |$3,028.81   |
+|TLT    |Bonos largo plazo |2020-01-03 |$3,850.03  |$0.00       |
+|GLD    |Oro               |2020-01-03 |$2,653.70  |$0.00       |
+|UUP    |Dólar             |2020-01-03 |$172.68    |$0.00       |
+|SPY    |Acciones EE.UU.   |2020-01-06 |$1,526.13  |$0.00       |
+|TLT    |Bonos largo plazo |2020-01-06 |-$1,419.54 |$1,419.54   |
+|GLD    |Oro               |2020-01-06 |$2,097.90  |$0.00       |
+|UUP    |Dólar             |2020-01-06 |-$344.96   |$344.96     |
+|SPY    |Acciones EE.UU.   |2020-01-07 |-$1,124.73 |$1,124.73   |
+|TLT    |Bonos largo plazo |2020-01-07 |-$1,229.03 |$1,229.03   |
+
+---
+
+# ¿Por qué poner pérdidas positivas?
+
+Porque facilita preguntas como:
+
+- ¿cuál fue la pérdida más grande?
+- ¿cuántos días perdí más de 10.000?
+- ¿qué porcentaje de días hubo pérdida?
+- ¿qué activo explica más pérdidas?
+- ¿cuándo se activaría una alerta?
+
+&lt;br&gt;
+
+.center[
+.orange[La forma de construir la variable debe servir a la pregunta de gestión.]
+]
+
+---
+
+# Frecuencia de pérdidas
+
+
+```r
+frecuencia_perdidas &lt;- perdidas %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  summarise(
+    dias_total = n(),
+    dias_con_perdida = sum(perdida_usd &gt; 0),
+    proporcion_dias_perdida = dias_con_perdida / dias_total,
+    perdida_promedio_condicional = mean(perdida_usd[perdida_usd &gt; 0]),
+    perdida_maxima = max(perdida_usd),
+    .groups = "drop"
+  )
+
+frecuencia_perdidas
+```
+
+---
+
+# Frecuencia de pérdidas
+
+
+|symbol |nombre            | dias_total| dias_con_perdida|proporcion_dias_perdida |perdida_promedio_condicional |perdida_maxima |
+|:------|:-----------------|----------:|----------------:|:-----------------------|:----------------------------|:--------------|
+|GLD    |Oro               |       1582|              719|45.4%                   |$1,610.34                    |$20,548.49     |
+|SPY    |Acciones EE.UU.   |       1582|              710|44.9%                   |$3,499.72                    |$43,769.48     |
+|TLT    |Bonos largo plazo |       1582|              798|50.4%                   |$2,002.36                    |$16,670.62     |
+|UUP    |Dólar             |       1582|              719|45.4%                   |$550.87                      |$4,810.50      |
+
+---
+
+# Cómo leer esta tabla
+
+.pull-left[
+
+### Días con pérdida
+
+No necesariamente debería sorprender que haya muchos días negativos.
+
+En mercados líquidos, subir y bajar es parte normal del comportamiento.
+
+]
+
+.pull-right[
+
+### Pérdida máxima
+
+Es más informativa para riesgo.
+
+Ayuda a preguntar:
+
+.center[
+.orange[¿podríamos soportar un día así?]
+]
+
+]
+
+---
+
+# Retorno acumulado
+
+Los retornos diarios muestran el camino.
+
+Pero también interesa saber qué pasó acumuladamente.
+
+Para retornos simples, el retorno acumulado se calcula multiplicando:
+
+.center[
+`$$\prod_{t=1}^{T}(1+R_t)-1$$`
+]
+
+&lt;br&gt;
+
+En R lo podemos construir paso a paso.
+
+---
+
+# Código: retorno acumulado
+
+
+```r
+retornos_acumulados &lt;- retornos %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  arrange(date) %&gt;%
+  mutate(
+    crecimiento_acumulado = cumprod(1 + ret_simple),
+    retorno_acumulado = crecimiento_acumulado - 1
+  ) %&gt;%
+  ungroup()
+
+head(retornos_acumulados)
+```
+
+---
+
+# Retorno acumulado
+
+
+|symbol |nombre            |date       |ret_simple |retorno_acumulado |
+|:------|:-----------------|:----------|:----------|:-----------------|
+|SPY    |Acciones EE.UU.   |2020-01-03 |-0.76%     |-0.76%            |
+|TLT    |Bonos largo plazo |2020-01-03 |1.54%      |1.54%             |
+|GLD    |Oro               |2020-01-03 |1.33%      |1.33%             |
+|UUP    |Dólar             |2020-01-03 |0.12%      |0.12%             |
+|SPY    |Acciones EE.UU.   |2020-01-06 |0.38%      |-0.38%            |
+|TLT    |Bonos largo plazo |2020-01-06 |-0.57%     |0.96%             |
+|GLD    |Oro               |2020-01-06 |1.05%      |2.39%             |
+|UUP    |Dólar             |2020-01-06 |-0.23%     |-0.12%            |
+|SPY    |Acciones EE.UU.   |2020-01-07 |-0.28%     |-0.66%            |
+|TLT    |Bonos largo plazo |2020-01-07 |-0.49%     |0.47%             |
+
+---
+
+# Gráfico de retorno acumulado
+
+
+```r
+ggplot(retornos_acumulados,
+       aes(x = date, y = retorno_acumulado, color = nombre)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.8) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retorno acumulado",
+    subtitle = "Evolución acumulada desde el inicio de la muestra",
+    x = "",
+    y = "Retorno acumulado",
+    color = ""
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+# Retorno acumulado
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-47-1.png" width="95%" /&gt;
+
+---
+
+# Qué aporta el retorno acumulado
+
+.pull-left[
+
+### Muestra desempeño
+
+Permite ver qué activo ganó o perdió más durante el periodo.
+
+Es útil para lectura de inversión.
+
+]
+
+.pull-right[
+
+### Pero no basta para riesgo
+
+Un buen retorno acumulado puede esconder caídas fuertes en el camino.
+
+.center[
+.orange[Un activo puede terminar bien y aun así haber sido muy riesgoso.]
+]
+
+]
+
+---
+
+# Drawdown: una idea muy útil
+
+El drawdown mide cuánto cae una inversión desde su máximo anterior.
+
+Es una medida muy intuitiva de dolor financiero.
+
+&lt;br&gt;
+
+.center[
+.orange[No pregunta cuánto gané, sino cuánto llegué a caer desde mi mejor momento.]
+]
+
+---
+
+# Intuición del drawdown
+
+Supongamos que una inversión llega a 120.
+
+Luego cae a 90.
+
+La caída desde el máximo es:
+
+.center[
+`$$\frac{90}{120} - 1 = -25\%$$`
+]
+
+&lt;br&gt;
+
+Ese -25% es el drawdown.
+
+&lt;br&gt;
+
+.center[
+.green[El drawdown habla de pérdida acumulada desde un pico.]
+]
+
+---
+
+# Código: drawdown
+
+
+```r
+drawdowns &lt;- retornos_acumulados %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  arrange(date) %&gt;%
+  mutate(
+    valor_acumulado = crecimiento_acumulado,
+    maximo_previo = cummax(valor_acumulado),
+    drawdown = valor_acumulado / maximo_previo - 1
+  ) %&gt;%
+  ungroup()
+
+head(drawdowns)
+```
+
+---
+
+# Drawdown
+
+
+|symbol |nombre            |date       | valor_acumulado| maximo_previo|drawdown |
+|:------|:-----------------|:----------|---------------:|-------------:|:--------|
+|SPY    |Acciones EE.UU.   |2020-01-03 |           0.992|         0.992|0.00%    |
+|TLT    |Bonos largo plazo |2020-01-03 |           1.015|         1.015|0.00%    |
+|GLD    |Oro               |2020-01-03 |           1.013|         1.013|0.00%    |
+|UUP    |Dólar             |2020-01-03 |           1.001|         1.001|0.00%    |
+|SPY    |Acciones EE.UU.   |2020-01-06 |           0.996|         0.996|0.00%    |
+|TLT    |Bonos largo plazo |2020-01-06 |           1.010|         1.015|-0.57%   |
+|GLD    |Oro               |2020-01-06 |           1.024|         1.024|0.00%    |
+|UUP    |Dólar             |2020-01-06 |           0.999|         1.001|-0.23%   |
+|SPY    |Acciones EE.UU.   |2020-01-07 |           0.993|         0.996|-0.28%   |
+|TLT    |Bonos largo plazo |2020-01-07 |           1.005|         1.015|-1.06%   |
+
+---
+
+# Gráfico de drawdown
+
+
+```r
+ggplot(drawdowns,
+       aes(x = date, y = drawdown, fill = nombre)) +
+  geom_area(alpha = 0.8) +
+  facet_wrap(~ nombre, ncol = 2) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Drawdown por activo",
+    subtitle = "Caída acumulada desde máximos previos",
+    x = "",
+    y = "Drawdown",
+    fill = ""
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+```
+
+---
+
+# Drawdown por activo
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-51-1.png" width="70%" /&gt;
+
+---
+
+# Cómo leer el drawdown
+
+.pull-left[
+
+### Cerca de cero
+
+El activo está cerca de su máximo acumulado.
+
+La pérdida desde el pico es pequeña.
+
+]
+
+.pull-right[
+
+### Muy negativo
+
+El activo está lejos de su máximo anterior.
+
+La pérdida acumulada desde el pico es grande.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[El drawdown ayuda a contar la historia de sufrimiento de una posición.]
+]
+
+---
+
+# Máximo drawdown
+
+Ahora podemos resumir el peor drawdown de cada activo.
+
+Esto responde una pregunta muy clara:
+
+.center[
+.orange[¿cuál fue la peor caída acumulada desde un máximo previo?]
+]
+
+---
+
+# Código: máximo drawdown
+
+
+```r
+max_drawdown &lt;- drawdowns %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  summarise(
+    max_drawdown = min(drawdown, na.rm = TRUE),
+    fecha_max_drawdown = date[which.min(drawdown)],
+    .groups = "drop"
+  )
+
+max_drawdown
+```
+
+---
+
+# Máximo drawdown
+
+
+|symbol |nombre            |max_drawdown |fecha_max_drawdown |
+|:------|:-----------------|:------------|:------------------|
+|GLD    |Oro               |-22.0%       |2022-09-26         |
+|SPY    |Acciones EE.UU.   |-33.7%       |2020-03-23         |
+|TLT    |Bonos largo plazo |-48.4%       |2023-10-19         |
+|UUP    |Dólar             |-14.2%       |2021-01-06         |
+
+---
+
+# Interpretación del máximo drawdown
+
+El máximo drawdown no dice cuál será la próxima caída.
+
+Pero sí dice qué tan fuerte fue la peor caída acumulada observada.
+
+&lt;br&gt;
+
+.center[
+.orange[Es una medida muy cercana a la experiencia real de un inversionista.]
+]
+
+&lt;br&gt;
+
+No es lo mismo perder 5% un día y recuperarse rápido, que caer 25% desde un máximo y tardar meses en volver.
+
+---
+
+# Volvemos al gestor de riesgo
+
+Hasta aquí ya tenemos varias formas de representar el riesgo:
+
+.pull-left[
+
+### Variables
+
+- precio,
+- retorno simple,
+- log-retorno,
+- P&amp;L,
+- pérdida,
+- retorno acumulado,
+- drawdown.
+
+]
+
+.pull-right[
+
+### Preguntas
+
+- ¿cuánto cambió?
+- ¿cuánto se perdió?
+- ¿qué tan fuerte fue la caída?
+- ¿qué activo duele más?
+- ¿dónde pondría una alerta?
+
+]
+
+---
+
+# Una tabla tipo reporte
+
+Ahora armemos una tabla compacta.
+
+La idea es que pueda leerse como un primer tablero de riesgo.
+
+No es todavía el modelo final.
+
+Pero ya permite conversar con evidencia.
+
+---
+
+# Código: reporte inicial
+
+
+```r
+reporte_inicial &lt;- resumen_riesgo_inicial %&gt;%
+  left_join(max_drawdown, by = c("symbol", "nombre")) %&gt;%
+  left_join(frecuencia_perdidas, by = c("symbol", "nombre")) %&gt;%
+  select(
+    activo = nombre,
+    retorno_promedio,
+    volatilidad_diaria,
+    peor_retorno,
+    peor_pnl,
+    proporcion_dias_perdida,
+    perdida_maxima,
+    max_drawdown
+  )
+
+reporte_inicial
+```
+
+---
+
+# Reporte inicial
+
+
+|activo            |retorno_promedio |volatilidad_diaria |peor_retorno |peor_pnl    |proporcion_dias_perdida |perdida_maxima |max_drawdown |
+|:-----------------|:----------------|:------------------|:------------|:-----------|:-----------------------|:--------------|:------------|
+|Oro               |0.08%            |1.14%              |-10.27%      |-$20,548.49 |45.4%                   |$20,548.49     |-22.0%       |
+|Acciones EE.UU.   |0.06%            |1.29%              |-10.94%      |-$43,769.48 |44.9%                   |$43,769.48     |-33.7%       |
+|Bonos largo plazo |-0.01%           |1.06%              |-6.67%       |-$16,670.62 |50.4%                   |$16,670.62     |-48.4%       |
+|Dólar             |0.01%            |0.47%              |-3.21%       |-$4,810.50  |45.4%                   |$4,810.50      |-14.2%       |
+
+---
+
+# Cómo leer el reporte
+
+.pull-left[
+
+### Si quiero comparar activos
+
+Miro retornos, volatilidad, peor retorno y drawdown.
+
+Eso permite ver comportamiento relativo.
+
+]
+
+.pull-right[
+
+### Si quiero gestionar dinero
+
+Miro P&amp;L, pérdida máxima y tamaño de posición.
+
+Eso permite ver impacto económico.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[Un buen reporte combina porcentaje y dinero.]
+]
+
+---
+
+# Semáforo con datos reales
+
+Ahora podemos conectar con la idea de gestión.
+
+Definimos algunas alertas simples:
+
+- volatilidad diaria mayor a 2%,
+- peor retorno menor a -5%,
+- drawdown menor a -20%,
+- pérdida máxima mayor a 20.000 dólares.
+
+&lt;br&gt;
+
+No son reglas universales.
+
+Son reglas pedagógicas para ver cómo se arma una señal.
+
+---
+
+# Código: semáforo
+
+
+```r
+semaforo_reporte &lt;- reporte_inicial %&gt;%
+  mutate(
+    alerta_volatilidad = case_when(
+      volatilidad_diaria &gt; 0.02 ~ "Rojo",
+      volatilidad_diaria &gt; 0.01 ~ "Amarillo",
+      TRUE ~ "Verde"
+    ),
+    alerta_peor_retorno = case_when(
+      peor_retorno &lt; -0.05 ~ "Rojo",
+      peor_retorno &lt; -0.03 ~ "Amarillo",
+      TRUE ~ "Verde"
+    ),
+    alerta_drawdown = case_when(
+      max_drawdown &lt; -0.20 ~ "Rojo",
+      max_drawdown &lt; -0.10 ~ "Amarillo",
+      TRUE ~ "Verde"
+    ),
+    alerta_perdida = case_when(
+      perdida_maxima &gt; 20000 ~ "Rojo",
+      perdida_maxima &gt; 10000 ~ "Amarillo",
+      TRUE ~ "Verde"
+    )
+  )
+
+semaforo_reporte
+```
+
+---
+
+# Semáforo con datos reales
+
+
+|activo            |alerta_volatilidad |alerta_peor_retorno |alerta_drawdown |alerta_perdida |
+|:-----------------|:------------------|:-------------------|:---------------|:--------------|
+|Oro               |Amarillo           |Rojo                |Rojo            |Rojo           |
+|Acciones EE.UU.   |Amarillo           |Rojo                |Rojo            |Rojo           |
+|Bonos largo plazo |Amarillo           |Rojo                |Rojo            |Amarillo       |
+|Dólar             |Verde              |Amarillo            |Amarillo        |Verde          |
+
+---
+
+# Qué significa este semáforo
+
+El semáforo no reemplaza el análisis.
+
+Pero ayuda a ordenar prioridades.
+
+&lt;br&gt;
+
+.pull-left[
+
+### Una alerta roja
+
+No significa vender inmediatamente.
+
+Significa que esa dimensión requiere revisión.
+
+]
+
+.pull-right[
+
+### Varias alertas rojas
+
+Pueden indicar que el activo o la posición necesita una decisión más seria.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[La señal no decide sola. La señal activa una conversación.]
+]
+
+---
+
+# Una visualización de alertas
+
+Podemos contar cuántas alertas aparecen por activo.
+
+Eso ayuda a construir una lectura ejecutiva.
+
+---
+
+# Código: conteo de alertas
+
+
+```r
+conteo_alertas &lt;- semaforo_reporte %&gt;%
+  select(activo, starts_with("alerta")) %&gt;%
+  pivot_longer(
+    cols = starts_with("alerta"),
+    names_to = "tipo_alerta",
+    values_to = "nivel"
+  ) %&gt;%
+  count(activo, nivel)
+
+ggplot(conteo_alertas,
+       aes(x = activo, y = n, fill = nivel)) +
+  geom_col(position = "stack") +
+  scale_fill_manual(
+    values = c(
+      "Rojo" = "red",
+      "Amarillo" = "yellow",
+      "Verde" = "green"
+    )+
+  labs(
+    title = "Número de alertas por activo",
+    subtitle = "Conteo simple de señales verdes, amarillas y rojas",
+    x = "",
+    y = "Número de alertas",
+    fill = "Nivel"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+# Conteo de alertas
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-59-1.png" width="90%" /&gt;
+
+---
+
+# Cómo usar esta visualización
+
+.pull-left[
+
+### Sirve para priorizar
+
+Permite ver rápidamente qué activos concentran más señales de cuidado.
+
+]
+
+.pull-right[
+
+### No sirve para cerrar el análisis
+
+Un conteo de alertas no mide severidad exacta.
+
+Una alerta roja puede ser más importante que tres amarillas.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[La visualización ayuda a preguntar mejor, no a dejar de pensar.]
+]
+
+---
+
+# Entonces, ¿qué variable usamos?
+
+Depende de la pregunta.
+
+.pull-left[
+
+### Si quiero comparar comportamiento
+
+Uso retornos.
+
+Me permiten comparar activos con precios distintos.
+
+]
+
+.pull-right[
+
+### Si quiero medir impacto económico
+
+Uso P&amp;L o pérdidas.
+
+Me conectan con dinero real y tamaño de posición.
+
+]
+
+&lt;br&gt;
+
+.center[
+.green[En riesgo financiero, la variable depende de la decisión.]
+]
+
+---
+
+# Pequeña síntesis
+
+.center[
+### Precio
+]
+
+.center[
+Muestra cuánto vale el activo.
+]
+
+&lt;br&gt;
+
+.center[
+### Retorno
+]
+
+.center[
+Muestra cuánto cambia el activo en términos relativos.
+]
+
+&lt;br&gt;
+
+.center[
+### P&amp;L
+]
+
+.center[
+Muestra cuánto gana o pierde la posición en dinero.
+]
+
+---
+
+# Lo que ya podemos hacer
+
+Con lo trabajado hasta aquí ya podemos:
+
+- descargar precios,
+- limpiar precios ajustados,
+- calcular retornos simples,
+- calcular log-retornos,
+- construir P&amp;L,
+- calcular pérdidas,
+- identificar peores días,
+- calcular retorno acumulado,
+- calcular drawdown,
+- construir un primer reporte de riesgo.
+
+&lt;br&gt;
+
+.center[
+.orange[Esto es la base mínima para empezar a medir riesgo con criterio.]
+]
+
+---
+
+# Lo que sigue..
+
+Ya sabemos transformar precios en retornos y pérdidas.
+
+Ahora la pregunta natural es:
+
+.center[
+.orange[¿qué características tienen esos retornos financieros?]
+]
+
+&lt;br&gt;
+
+Ahí entran los hechos estilizados:
+
+- volatilidad cambiante,
+- colas pesadas,
+- asimetrías,
+- eventos extremos,
+- dependencia,
+- periodos de calma y turbulencia.
+
+
+
+
+
+---
+
+
+
+class: inverse, center, middle
+
+# 3. Hechos estilizados relevantes para riesgo
+
+---
+
+# La pregunta ahora es otra
+
+Ya sabemos pasar de precios a retornos.
+
+Ya sabemos construir P&amp;L, pérdidas y drawdowns.
+
+Ahora necesitamos mirar algo más profundo:
+
+.center[
+.orange[¿cómo se comportan realmente los retornos financieros?]
+]
+
+&lt;br&gt;
+
+Porque muchas metodologías de riesgo parten de supuestos.
+
+Y el problema es que los datos financieros muchas veces no se comportan tan “ordenados”.
+
+---
+
+# Por qué importa esto
+
+Si los retornos fueran tranquilos, simétricos y normales, medir riesgo sería más sencillo.
+
+Pero en la práctica suelen aparecer:
+
+- caídas fuertes,
+- periodos de alta volatilidad,
+- colas pesadas,
+- asimetrías,
+- episodios de estrés,
+- correlaciones que cambian.
+
+&lt;br&gt;
+
+.center[
+.orange[Los hechos estilizados son patrones que aparecen una y otra vez en datos financieros.]
+]
+
+---
+
+# La idea central
+
+No estamos buscando memorizar definiciones.
+
+Estamos tratando de ver algo más aplicado:
+
+.center[
+.orange[qué cosas de los datos pueden hacer que una medición de riesgo falle.]
+]
+
+&lt;br&gt;
+
+Por ejemplo:
+
+- si hay colas pesadas, la normal puede subestimar pérdidas extremas;
+- si la volatilidad cambia, una sola desviación estándar puede quedarse corta;
+- si la correlación cambia en crisis, la diversificación puede fallar justo cuando más se necesita.
+
+---
+
+# Qué vamos a mirar
+
+En esta sección vamos a revisar varios hechos estilizados usando los activos descargados:
+
+.pull-left[
+
+### En los retornos
+
+- distribución,
+- media,
+- volatilidad,
+- asimetría,
+- curtosis,
+- colas,
+- extremos.
+
+]
+
+.pull-right[
+
+### En el tiempo
+
+- clustering de volatilidad,
+- volatilidad móvil,
+- retornos extremos,
+- dependencia,
+- correlación móvil.
+
+]
+
+&lt;br&gt;
+
+.center[
+.green[La idea es conectar cada gráfico con una pregunta de gestión.]
+]
+
+---
+
+# Punto de partida
+
+Seguimos usando la base `retornos` que construimos antes.
+
+Debe tener, al menos:
+
+- `symbol`,
+- `nombre`,
+- `date`,
+- `adjusted`,
+- `ret_simple`,
+- `ret_log`.
+
+&lt;br&gt;
+
+Revisemos rápidamente cómo luce.
+
+---
+
+# Código: revisar base de retornos
+
+
+```r
+retornos %&gt;%
+  select(symbol, nombre, date, adjusted, ret_simple, ret_log) %&gt;%
+  head(10)
+```
+
+---
+
+# Base de retornos
+
+
+|symbol |nombre            |date       |  adjusted|ret_simple |ret_log |
+|:------|:-----------------|:----------|---------:|:----------|:-------|
+|SPY    |Acciones EE.UU.   |2020-01-03 | 294.64005|-0.76%     |-0.76%  |
+|TLT    |Bonos largo plazo |2020-01-03 | 115.92470|1.54%      |1.53%   |
+|GLD    |Oro               |2020-01-03 | 145.86000|1.33%      |1.32%   |
+|UUP    |Dólar             |2020-01-03 |  22.49221|0.12%      |0.12%   |
+|SPY    |Acciones EE.UU.   |2020-01-06 | 295.76419|0.38%      |0.38%   |
+|TLT    |Bonos largo plazo |2020-01-06 | 115.26646|-0.57%     |-0.57%  |
+|GLD    |Oro               |2020-01-06 | 147.39000|1.05%      |1.04%   |
+|UUP    |Dólar             |2020-01-06 |  22.44048|-0.23%     |-0.23%  |
+|SPY    |Acciones EE.UU.   |2020-01-07 | 294.93256|-0.28%     |-0.28%  |
+|TLT    |Bonos largo plazo |2020-01-07 | 114.69979|-0.49%     |-0.49%  |
+
+---
+
+# Primer hecho estilizado
+
+.center[
+# Los retornos se concentran cerca de cero
+]
+
+&lt;br&gt;
+
+En muchos activos financieros, la mayoría de los días tienen movimientos pequeños.
+
+Pero eso no significa que el riesgo sea pequeño.
+
+&lt;br&gt;
+
+.center[
+.orange[El problema no está solo en lo que ocurre casi todos los días, sino en lo que ocurre pocas veces.]
+]
+
+---
+
+# Retornos diarios otra vez
+
+Antes de mirar distribuciones, volvamos a ver los retornos en el tiempo.
+
+Esto permite ver si los movimientos parecen “uniformes” o si hay episodios de tensión.
+
+---
+
+# Código: retornos diarios
+
+
+```r
+ggplot(retornos,
+       aes(x = date, y = ret_simple, color = nombre)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.35, alpha = 0.85) +
+  facet_wrap(~ nombre, ncol = 2) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retornos diarios",
+    subtitle = "La mayoría de movimientos están cerca de cero, pero aparecen episodios extremos",
+    x = "",
+    y = "Retorno diario",
+    color = ""
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+```
+
+---
+
+# Retornos diarios
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-63-1.png" width="80%" /&gt;
+
+---
+
+# Qué se empieza a notar
+
+.pull-left[
+
+### En días normales
+
+Los retornos se mueven cerca de cero.
+
+Eso puede dar una sensación de estabilidad.
+
+]
+
+.pull-right[
+
+### En días de estrés
+
+Los retornos se alejan bastante de cero.
+
+Ahí aparecen las pérdidas que preocupan a un gestor de riesgo.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[El riesgo vive en la cola, no en el promedio.]
+]
+
+---
+
+# Segundo hecho estilizado
+
+.center[
+# La distribución no suele ser perfectamente normal
+]
+
+&lt;br&gt;
+
+La distribución normal es cómoda.
+
+Tiene forma conocida, se resume con media y desviación estándar, y permite calcular probabilidades fácilmente.
+
+Pero los retornos financieros muchas veces tienen más masa en las colas.
+
+&lt;br&gt;
+
+.center[
+.orange[Más masa en las colas significa más eventos extremos de los que una normal esperaría.]
+]
+
+---
+
+# Histograma de retornos
+
+Miremos cómo se distribuyen los retornos diarios.
+
+El histograma muestra qué movimientos ocurren con mayor frecuencia.
+
+&lt;br&gt;
+
+.center[
+.orange[Si todo fuera muy normal, esperaríamos una forma bastante simétrica y suave.]
+]
+
+---
+
+# Código: histograma de retornos
+
+
+```r
+ggplot(retornos,
+       aes(x = ret_simple)) +
+  geom_histogram(aes(y = after_stat(density)),
+                 bins = 60,
+                 alpha = 0.7) +
+  facet_wrap(~ nombre, scales = "free", ncol = 2) +
+  scale_x_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Distribución de retornos diarios",
+    subtitle = "Histograma de retornos simples",
+    x = "Retorno diario",
+    y = "Densidad"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+# Histograma de retornos
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-65-1.png" width="80%" /&gt;
+
+---
+
+# Cómo leer el histograma
+
+.pull-left[
+
+### Centro de la distribución
+
+La mayoría de retornos están cerca de cero.
+
+Esto es normal en datos diarios.
+
+]
+
+.pull-right[
+
+### Colas
+
+Los retornos muy negativos o muy positivos son menos frecuentes.
+
+Pero son los más importantes para riesgo.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[Un histograma no solo muestra frecuencia. También muestra dónde pueden vivir las pérdidas extremas.]
+]
+
+---
+
+# Comparar contra una normal
+
+Ahora hagamos algo más útil.
+
+Vamos a comparar la distribución empírica de los retornos contra una distribución normal con la misma media y desviación estándar.
+
+&lt;br&gt;
+
+.center[
+.orange[La pregunta es: si asumimos normalidad, ¿estamos contando bien las colas?]
+]
+
+---
+
+# Código: densidad normal comparable
+
+
+```r
+# Parámetros por activo
+parametros_normal &lt;- retornos %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  summarise(
+    media = mean(ret_simple, na.rm = TRUE),
+    sigma = sd(ret_simple, na.rm = TRUE),
+    minimo = min(ret_simple, na.rm = TRUE),
+    maximo = max(ret_simple, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Curva normal teórica para cada activo
+normal_teorica &lt;- parametros_normal %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  summarise(
+    x = seq(minimo, maximo, length.out = 300),
+    media = first(media),
+    sigma = first(sigma),
+    .groups = "drop"
+  ) %&gt;%
+  mutate(
+    densidad_normal = dnorm(x, mean = media, sd = sigma)
+  )
+```
+
+---
+
+# Código: histograma vs normal
+
+
+```r
+ggplot() +
+  geom_histogram(
+    data = retornos,
+    aes(x = ret_simple, y = after_stat(density)),
+    bins = 60,
+    alpha = 0.65
+  ) +
+  geom_line(
+    data = normal_teorica,
+    aes(x = x, y = densidad_normal),
+    linewidth = 1
+  ) +
+  facet_wrap(~ nombre, scales = "free", ncol = 2) +
+  scale_x_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retornos observados vs distribución normal",
+    subtitle = "La línea representa una normal con la misma media y volatilidad",
+    x = "Retorno diario",
+    y = "Densidad"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+# Histograma vs normal
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-68-1.png" width="80%" /&gt;
+
+---
+
+# Qué deberíamos mirar
+
+.pull-left[
+
+### Si la normal calza bien
+
+La línea debería seguir bastante bien la forma del histograma.
+
+Especialmente en centro y colas.
+
+]
+
+.pull-right[
+
+### Si no calza bien
+
+Pueden aparecer colas más pesadas, asimetrías o concentración excesiva en el centro.
+
+Eso importa mucho para riesgo.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[El mayor peligro no está en equivocarse un poco en el centro, sino en equivocarse en las colas.]
+]
+
+---
+
+# Tercer hecho estilizado
+
+.center[
+# Hay colas pesadas
+]
+
+&lt;br&gt;
+
+Colas pesadas significa que hay más eventos extremos de los que esperaríamos bajo una distribución normal.
+
+En riesgo financiero esto es crítico.
+
+&lt;br&gt;
+
+.center[
+.orange[Si subestimo la cola izquierda, subestimo pérdidas extremas.]
+]
+
+---
+
+# Mirar la cola izquierda
+
+La cola izquierda contiene los retornos más negativos.
+
+Ahí están los días que más duelen.
+
+&lt;br&gt;
+
+Para riesgo, muchas veces la pregunta no es:
+
+.center[
+“¿cuál fue el retorno promedio?”
+]
+
+sino:
+
+.center[
+.orange[¿qué tan malos pueden ser los días malos?]
+]
+
+---
+
+# Percentiles de la cola
+
+Podemos mirar percentiles bajos de los retornos.
+
+Por ejemplo:
+
+- percentil 10%,
+- percentil 5%,
+- percentil 1%.
+
+&lt;br&gt;
+
+Mientras más bajo el percentil, más extremo el escenario histórico.
+
+---
+
+# Código: percentiles de cola
+
+
+```r
+percentiles_cola &lt;- retornos %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  summarise(
+    p10 = quantile(ret_simple, 0.10, na.rm = TRUE),
+    p05 = quantile(ret_simple, 0.05, na.rm = TRUE),
+    p01 = quantile(ret_simple, 0.01, na.rm = TRUE),
+    peor_dia = min(ret_simple, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+percentiles_cola
+```
+
+---
+
+# Percentiles de cola
+
+
+|symbol |nombre            |p10    |p05    |p01    |peor_dia |
+|:------|:-----------------|:------|:------|:------|:--------|
+|GLD    |Oro               |-1.16% |-1.77% |-3.16% |-10.27%  |
+|SPY    |Acciones EE.UU.   |-1.24% |-1.79% |-3.58% |-10.94%  |
+|TLT    |Bonos largo plazo |-1.24% |-1.67% |-2.56% |-6.67%   |
+|UUP    |Dólar             |-0.53% |-0.73% |-1.18% |-3.21%   |
+
+---
+
+# Cómo leer estos percentiles
+
+.pull-left[
+
+### Percentil 5%
+
+Aproximadamente, 5% de los días fueron peores que ese valor.
+
+Es una lectura histórica de días malos.
+
+]
+
+.pull-right[
+
+### Percentil 1%
+
+Mira eventos más extremos.
+
+No ocurre todos los días, pero importa mucho para riesgo.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[Estos percentiles son la antesala natural del VaR histórico.]
+]
+
+---
+
+# Comparar cola empírica vs normal
+
+Ahora comparemos algo simple:
+
+¿Cuántos días caen por debajo de un umbral de -2 desviaciones estándar?
+
+Bajo normalidad, esperaríamos una proporción relativamente pequeña.
+
+&lt;br&gt;
+
+.center[
+.orange[Si en los datos reales aparecen más días extremos, la normal puede quedarse corta.]
+]
+
+---
+
+# Código: eventos extremos
+
+
+```r
+eventos_extremos &lt;- retornos %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  mutate(
+    media = mean(ret_simple, na.rm = TRUE),
+    sigma = sd(ret_simple, na.rm = TRUE),
+    umbral_2sd = media - 2 * sigma,
+    evento_extremo_izq = ret_simple &lt; umbral_2sd
+  ) %&gt;%
+  summarise(
+    dias = n(),
+    eventos_extremos = sum(evento_extremo_izq, na.rm = TRUE),
+    proporcion_empirica = eventos_extremos / dias,
+    proporcion_normal = pnorm(-2),
+    .groups = "drop"
+  )
+
+eventos_extremos
+```
+
+---
+
+# Eventos extremos de cola izquierda
+
+
+|symbol |nombre            | dias| eventos_extremos|proporcion_empirica |proporcion_normal |
+|:------|:-----------------|----:|----------------:|:-------------------|:-----------------|
+|GLD    |Oro               | 1582|               39|2.5%                |2.3%              |
+|SPY    |Acciones EE.UU.   | 1582|               41|2.6%                |2.3%              |
+|TLT    |Bonos largo plazo | 1582|               35|2.2%                |2.3%              |
+|UUP    |Dólar             | 1582|               39|2.5%                |2.3%              |
+
+---
+
+# Qué nos dice esta tabla
+
+.pull-left[
+
+### Proporción normal
+
+Es lo que esperaríamos si los retornos siguieran una normal.
+
+Funciona como punto de comparación.
+
+]
+
+.pull-right[
+
+### Proporción empírica
+
+Es lo que realmente aparece en los datos.
+
+Si es mayor, tenemos más eventos extremos de lo esperado.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[Esta comparación muestra por qué los supuestos importan.]
+]
+
+---
+
+# Visualizar eventos extremos
+
+Podemos marcar los días que caen por debajo del umbral de dos desviaciones estándar.
+
+Así vemos si los extremos están aislados o concentrados en ciertos periodos.
+
+---
+
+# Código: marcar extremos
+
+
+```r
+retornos_extremos &lt;- retornos %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  mutate(
+    media = mean(ret_simple, na.rm = TRUE),
+    sigma = sd(ret_simple, na.rm = TRUE),
+    umbral_2sd = media - 2 * sigma,
+    extremo_izq = ret_simple &lt; umbral_2sd
+  ) %&gt;%
+  ungroup()
+
+ggplot(retornos_extremos,
+       aes(x = date, y = ret_simple)) +
+  geom_line(alpha = 0.55) +
+  geom_point(
+    data = retornos_extremos %&gt;% filter(extremo_izq),
+    aes(x = date, y = ret_simple),
+    size = 1.4
+  ) +
+  facet_wrap(~ nombre, ncol = 2) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Eventos extremos de cola izquierda",
+    subtitle = "Puntos marcados: retornos menores a media - 2 desviaciones estándar",
+    x = "",
+    y = "Retorno diario"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+# Eventos extremos
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-74-1.png" width="80%" /&gt;
+
+---
+
+# Cómo leer este gráfico
+
+.pull-left[
+
+### Si los puntos aparecen aislados
+
+Los eventos extremos parecen más puntuales.
+
+Puede haber choques específicos.
+
+]
+
+.pull-right[
+
+### Si aparecen agrupados
+
+Puede haber periodos de estrés.
+
+Eso sugiere que la volatilidad no es constante.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[Los extremos no siempre llegan solos.]
+]
+
+---
+
+# Cuarto hecho estilizado
+
+.center[
+# La volatilidad cambia en el tiempo
+]
+
+&lt;br&gt;
+
+Una suposición muy común y cómoda es pensar que la volatilidad es constante.
+
+Pero en mercados financieros suele pasar otra cosa:
+
+.center[
+.orange[hay periodos tranquilos y periodos turbulentos.]
+]
+
+&lt;br&gt;
+
+Eso se conoce como clustering de volatilidad.
+
+---
+
+# Qué significa clustering
+
+Clustering significa agrupamiento.
+
+En este contexto:
+
+.center[
+.orange[los días de alta volatilidad tienden a aparecer cerca de otros días de alta volatilidad.]
+]
+
+&lt;br&gt;
+
+Y los días tranquilos tienden a aparecer cerca de otros días tranquilos.
+
+Esto es una de las razones por las que aparecen modelos tipo GARCH.
+
+---
+
+# Volatilidad móvil
+
+Una forma simple de verlo es calcular una volatilidad móvil.
+
+Por ejemplo, la desviación estándar de los retornos en ventanas de 21 días.
+
+&lt;br&gt;
+
+.center[
+.orange[21 días se puede interpretar aproximadamente como un mes bursátil.]
+]
+
+---
+
+# Código: volatilidad móvil
+
+
+```r
+volatilidad_movil &lt;- retornos %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  arrange(date) %&gt;%
+  mutate(
+    vol_21d = slide_dbl(
+      ret_simple,
+      sd,
+      .before = 20,
+      .complete = TRUE,
+      na.rm = TRUE
+    ),
+    vol_21d_anual = vol_21d * sqrt(252)
+  ) %&gt;%
+  ungroup()
+```
+
+---
+
+# Código: gráfico de volatilidad móvil
+
+
+```r
+ggplot(volatilidad_movil,
+       aes(x = date, y = vol_21d_anual, color = nombre)) +
+  geom_line(linewidth = 0.6, alpha = 0.9) +
+  facet_wrap(~ nombre, ncol = 2, scales = "free_y") +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Volatilidad móvil anualizada",
+    subtitle = "Ventana de 21 días",
+    x = "",
+    y = "Volatilidad anualizada",
+    color = ""
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "none")
+```
+
+---
+
+# Volatilidad móvil
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-77-1.png" width="80%" /&gt;
+
+---
+
+# Cómo leer la volatilidad móvil
+
+.pull-left[
+
+### Tramos bajos
+
+El activo se está moviendo poco.
+
+El riesgo diario luce más controlado.
+
+]
+
+.pull-right[
+
+### Tramos altos
+
+El activo está más inestable.
+
+Las pérdidas potenciales pueden crecer.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[La volatilidad no es una característica fija. Cambia con el régimen de mercado.]
+]
+
+---
+
+# Una tabla de volatilidad reciente
+
+Para gestión de riesgo no solo interesa la volatilidad histórica completa.
+
+También interesa saber cómo está el riesgo ahora frente a su historia.
+
+&lt;br&gt;
+
+.center[
+.orange[Una alerta útil compara el nivel reciente con el comportamiento histórico.]
+]
+
+---
+
+# Código: volatilidad reciente
+
+
+```r
+resumen_volatilidad &lt;- volatilidad_movil %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  summarise(
+    vol_actual = last(na.omit(vol_21d_anual)),
+    vol_promedio = mean(vol_21d_anual, na.rm = TRUE),
+    vol_maxima = max(vol_21d_anual, na.rm = TRUE),
+    .groups = "drop"
+  ) %&gt;%
+  mutate(
+    razon_actual_promedio = vol_actual / vol_promedio
+  )
+
+resumen_volatilidad
+```
+
+---
+
+# Volatilidad reciente vs histórica
+
+
+|symbol |nombre            |vol_actual |vol_promedio |vol_maxima | razon_actual_promedio|
+|:------|:-----------------|:----------|:------------|:----------|---------------------:|
+|GLD    |Oro               |31.7%      |16.5%        |57.3%      |                  1.93|
+|SPY    |Acciones EE.UU.   |17.9%      |17.2%        |93.0%      |                  1.04|
+|TLT    |Bonos largo plazo |9.4%       |15.6%        |61.4%      |                  0.60|
+|UUP    |Dólar             |5.9%       |7.0%         |24.4%      |                  0.85|
+
+---
+
+# Cómo leer esta tabla
+
+.pull-left[
+
+### Volatilidad actual
+
+Es una foto reciente del riesgo.
+
+Ayuda a ver cómo está el activo ahora.
+
+]
+
+.pull-right[
+
+### Razón actual/promedio
+
+Si está por encima de 1, la volatilidad actual supera su promedio histórico.
+
+Si está muy por encima de 1, hay una señal de atención.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[Esto ya puede convertirse en una alerta de monitoreo.]
+]
+
+---
+
+# Semáforo de volatilidad
+
+Podemos construir una señal sencilla:
+
+- verde: volatilidad actual menor o igual al promedio,
+- amarillo: hasta 1.5 veces el promedio,
+- rojo: más de 1.5 veces el promedio.
+
+&lt;br&gt;
+
+No es una regla universal.
+
+Es una forma simple de traducir una métrica en una señal.
+
+---
+
+# Código: semáforo de volatilidad
+
+
+```r
+semaforo_volatilidad &lt;- resumen_volatilidad %&gt;%
+  mutate(
+    alerta_volatilidad = case_when(
+      razon_actual_promedio &gt; 1.5 ~ "Rojo",
+      razon_actual_promedio &gt; 1.0 ~ "Amarillo",
+      TRUE ~ "Verde"
+    )
+  )
+
+semaforo_volatilidad
+```
+
+---
+
+# Semáforo de volatilidad
+
+
+|nombre            |vol_actual |vol_promedio | razon_actual_promedio|alerta_volatilidad |
+|:-----------------|:----------|:------------|---------------------:|:------------------|
+|Oro               |31.7%      |16.5%        |                  1.93|Rojo               |
+|Acciones EE.UU.   |17.9%      |17.2%        |                  1.04|Amarillo           |
+|Bonos largo plazo |9.4%       |15.6%        |                  0.60|Verde              |
+|Dólar             |5.9%       |7.0%         |                  0.85|Verde              |
+
+---
+
+# Lectura de gestión
+
+Si un activo aparece en rojo no significa automáticamente cerrar la posición.
+
+Significa que su volatilidad reciente está alta frente a su propia historia.
+
+&lt;br&gt;
+
+.center[
+.orange[Una alerta de volatilidad no da una orden. Activa una revisión.]
+]
+
+&lt;br&gt;
+
+La revisión puede llevar a:
+
+- reducir exposición,
+- revisar cobertura,
+- aumentar frecuencia de monitoreo,
+- cambiar supuestos de VaR,
+- evaluar escenarios de estrés.
+
+---
+
+# Quinto hecho estilizado
+
+.center[
+# Hay asimetría
+]
+
+&lt;br&gt;
+
+La asimetría muestra si la distribución tiene más peso hacia un lado.
+
+En riesgo nos preocupa especialmente la asimetría negativa.
+
+&lt;br&gt;
+
+.center[
+.orange[Asimetría negativa significa que la cola izquierda puede ser más pesada.]
+]
+
+---
+
+# Asimetría en palabras simples
+
+.pull-left[
+
+### Simétrica
+
+Los retornos negativos y positivos tienen una forma relativamente balanceada.
+
+]
+
+.pull-right[
+
+### Asimétrica
+
+Un lado de la distribución pesa más.
+
+En riesgo, preocupa cuando pesan más las pérdidas extremas.
+
+]
+
+&lt;br&gt;
+
+.center[
+.green[La asimetría ayuda a mirar la forma de la distribución, no solo su dispersión.]
+]
+
+---
+
+# Sexto hecho estilizado
+
+.center[
+# La curtosis suele ser alta
+]
+
+&lt;br&gt;
+
+La curtosis ayuda a identificar qué tan pesadas son las colas.
+
+Una distribución normal tiene curtosis cercana a 3.
+
+Cuando la curtosis es mayor, suele haber más eventos extremos.
+
+&lt;br&gt;
+
+.center[
+.orange[Más curtosis suele significar más atención a las colas.]
+]
+
+---
+
+# Funciones simples en R
+
+Para no depender de paquetes adicionales, podemos calcular asimetría y curtosis manualmente.
+
+La idea no es memorizar la fórmula.
+
+La idea es construir indicadores para describir la distribución.
+
+---
+
+# Código: funciones de asimetría y curtosis
+
+
+```r
+asimetria &lt;- function(x) {
+  x &lt;- x[!is.na(x)]
+  m &lt;- mean(x)
+  s &lt;- sd(x)
+  mean(((x - m) / s)^3)
+}
+
+curtosis &lt;- function(x) {
+  x &lt;- x[!is.na(x)]
+  m &lt;- mean(x)
+  s &lt;- sd(x)
+  mean(((x - m) / s)^4)
+}
+```
+
+---
+
+# Código: tabla descriptiva
+
+
+```r
+descriptivos_retornos &lt;- retornos %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  summarise(
+    media = mean(ret_simple, na.rm = TRUE),
+    volatilidad = sd(ret_simple, na.rm = TRUE),
+    asimetria = asimetria(ret_simple),
+    curtosis = curtosis(ret_simple),
+    minimo = min(ret_simple, na.rm = TRUE),
+    maximo = max(ret_simple, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+descriptivos_retornos
+```
+
+---
+
+# Descriptivos de retornos
+
+
+|symbol |nombre            |media  |volatilidad | asimetria| curtosis|minimo  |maximo |
+|:------|:-----------------|:------|:-----------|---------:|--------:|:-------|:------|
+|GLD    |Oro               |0.08%  |1.14%       |     -0.68|     9.96|-10.27% |6.36%  |
+|SPY    |Acciones EE.UU.   |0.06%  |1.29%       |     -0.26|    16.05|-10.94% |10.50% |
+|TLT    |Bonos largo plazo |-0.01% |1.06%       |      0.19|     7.50|-6.67%  |7.52%  |
+|UUP    |Dólar             |0.01%  |0.47%       |      0.00|     8.16|-3.21%  |3.78%  |
+
+---
+
+# Cómo leer la media
+
+La media del retorno diario suele ser pequeña.
+
+Eso es normal.
+
+En datos diarios, el retorno promedio no siempre dice mucho sobre riesgo.
+
+&lt;br&gt;
+
+.center[
+.orange[Un promedio pequeño puede convivir con pérdidas extremas grandes.]
+]
+
+&lt;br&gt;
+
+Por eso no basta con mirar la media.
+
+---
+
+# Cómo leer la volatilidad
+
+La volatilidad muestra qué tanto se dispersan los retornos alrededor de su media.
+
+Más volatilidad implica más incertidumbre diaria.
+
+&lt;br&gt;
+
+Pero hay un cuidado:
+
+.center[
+.orange[dos activos pueden tener volatilidad parecida y colas muy diferentes.]
+]
+
+&lt;br&gt;
+
+Por eso necesitamos mirar también asimetría, curtosis y percentiles.
+
+---
+
+# Cómo leer la asimetría
+
+.pull-left[
+
+### Asimetría positiva
+
+La cola derecha pesa más.
+
+Hay movimientos positivos extremos más marcados.
+
+]
+
+.pull-right[
+
+### Asimetría negativa
+
+La cola izquierda pesa más.
+
+Hay movimientos negativos extremos más preocupantes.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[Para riesgo, la asimetría negativa suele ser una señal importante.]
+]
+
+---
+
+# Cómo leer la curtosis
+
+.pull-left[
+
+### Curtosis cerca de 3
+
+Se parece más a una normal.
+
+No significa que todo esté perfecto, pero es una referencia.
+
+]
+
+.pull-right[
+
+### Curtosis mayor que 3
+
+Sugiere colas más pesadas.
+
+Puede haber más eventos extremos que bajo normalidad.
+
+]
+
+&lt;br&gt;
+
+.center[
+.green[Alta curtosis es una alerta para no confiar demasiado en supuestos normales.]
+]
+
+---
+
+# Gráfico de asimetría y curtosis
+
+Podemos visualizar estos dos indicadores juntos.
+
+La idea es ubicar activos que combinan:
+
+- alta curtosis,
+- asimetría negativa,
+- o ambos.
+
+&lt;br&gt;
+
+.center[
+.orange[Esos activos merecen más cuidado en medición de pérdidas extremas.]
+]
+
+---
+
+# Código: asimetría vs curtosis
+
+
+```r
+ggplot(descriptivos_retornos,
+       aes(x = asimetria, y = curtosis, label = nombre)) +
+  geom_hline(yintercept = 3, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_text(nudge_y = 0.4, check_overlap = TRUE) +
+  labs(
+    title = "Asimetría y curtosis de retornos",
+    subtitle = "Líneas punteadas: asimetría 0 y curtosis normal cercana a 3",
+    x = "Asimetría",
+    y = "Curtosis"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+# Asimetría vs curtosis
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-86-1.png" width="88%" /&gt;
+
+---
+
+# Cómo leer este gráfico
+
+.pull-left[
+
+### A la izquierda
+
+Activos con asimetría negativa.
+
+La cola izquierda puede ser más relevante.
+
+]
+
+.pull-right[
+
+### Muy arriba
+
+Activos con mayor curtosis.
+
+Hay señales de colas más pesadas o extremos más frecuentes.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[El cuadrante más delicado combina asimetría negativa y curtosis alta.]
+]
+
+---
+
+# Séptimo hecho estilizado
+
+.center[
+# Los retornos pueden no estar correlacionados, pero la volatilidad sí
+]
+
+&lt;br&gt;
+
+En muchos activos, los retornos diarios tienen poca autocorrelación.
+
+Es decir, el retorno de hoy no predice fácilmente el retorno de mañana.
+
+Pero la volatilidad sí puede mostrar persistencia.
+
+&lt;br&gt;
+
+.center[
+.orange[La dirección es difícil de predecir; la intensidad del movimiento puede ser más persistente.]
+]
+
+---
+
+# Autocorrelación: idea sencilla
+
+Autocorrelación significa relación de una variable con sus propios rezagos.
+
+Por ejemplo:
+
+.center[
+.orange[¿el retorno de hoy se parece al retorno de ayer?]
+]
+
+&lt;br&gt;
+
+Si la autocorrelación es baja, no hay mucha relación lineal entre movimientos consecutivos.
+
+---
+
+# Pero miremos también retornos al cuadrado
+
+Los retornos al cuadrado ayudan a mirar intensidad del movimiento.
+
+No importa si el retorno fue positivo o negativo.
+
+Importa si fue grande.
+
+&lt;br&gt;
+
+.center[
+.orange[Retornos al cuadrado altos suelen representar días movidos.]
+]
+
+---
+
+# Preparar datos para autocorrelación
+
+Vamos a calcular autocorrelaciones hasta 20 rezagos para:
+
+- retornos,
+- retornos al cuadrado.
+
+&lt;br&gt;
+
+Esto ayuda a comparar dirección vs intensidad.
+
+---
+
+# Código: función de autocorrelación
+
+
+```r
+calcular_acf &lt;- function(x, max_lag = 20) {
+  acf_obj &lt;- acf(x, plot = FALSE, lag.max = max_lag, na.action = na.pass)
+  tibble(
+    lag = as.numeric(acf_obj$lag),
+    acf = as.numeric(acf_obj$acf)
+  )
+}
+```
+
+---
+
+# Código: ACF por activo
+
+
+```r
+acf_retornos &lt;- retornos %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  summarise(
+    datos = list(calcular_acf(ret_simple, max_lag = 20)),
+    .groups = "drop"
+  ) %&gt;%
+  unnest(datos) %&gt;%
+  filter(lag &gt; 0) %&gt;%
+  mutate(tipo = "Retornos")
+
+acf_cuadrados &lt;- retornos %&gt;%
+  mutate(ret_cuadrado = ret_simple^2) %&gt;%
+  group_by(symbol, nombre) %&gt;%
+  summarise(
+    datos = list(calcular_acf(ret_cuadrado, max_lag = 20)),
+    .groups = "drop"
+  ) %&gt;%
+  unnest(datos) %&gt;%
+  filter(lag &gt; 0) %&gt;%
+  mutate(tipo = "Retornos al cuadrado")
+
+acf_comparacion &lt;- bind_rows(acf_retornos, acf_cuadrados)
+```
+
+---
+
+# Código: gráfico ACF
+
+
+```r
+ggplot(acf_comparacion,
+       aes(x = lag, y = acf)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_col(alpha = 0.75) +
+  facet_grid(tipo ~ nombre) +
+  labs(
+    title = "Autocorrelación: retornos vs retornos al cuadrado",
+    subtitle = "La volatilidad puede mostrar más persistencia que los retornos",
+    x = "Rezago",
+    y = "Autocorrelación"
+  ) +
+  theme_minimal(base_size = 11)
+```
+
+---
+
+# Autocorrelación
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-90-1.png" width="70%" /&gt;
+
+---
+
+# Cómo leer este gráfico
+
+.pull-left[
+
+### Retornos
+
+Si las barras están cerca de cero, hay poca memoria lineal en la dirección del retorno.
+
+Eso sugiere que predecir el signo es difícil.
+
+]
+
+.pull-right[
+
+### Retornos al cuadrado
+
+Si las barras son más persistentes, hay señal de agrupamiento de volatilidad.
+
+Eso conecta con modelos tipo GARCH.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[La media puede ser difícil de predecir, pero la volatilidad puede tener estructura.]
+]
+
+---
+
+# Octavo hecho estilizado
+
+.center[
+# La correlación no es fija
+]
+
+&lt;br&gt;
+
+Muchas decisiones financieras asumen que la correlación entre activos es estable.
+
+Pero en periodos de estrés puede cambiar.
+
+&lt;br&gt;
+
+.center[
+.orange[La diversificación puede funcionar bien en calma y fallar parcialmente en crisis.]
+]
+
+---
+
+# Por qué importa la correlación
+
+La correlación ayuda a entender si dos activos se mueven juntos.
+
+.pull-left[
+
+### Correlación baja
+
+Puede ayudar a diversificar.
+
+]
+
+.pull-right[
+
+### Correlación alta
+
+Los activos se mueven más parecido.
+
+La diversificación puede ser menor.
+
+]
+
+&lt;br&gt;
+
+.center[
+.green[Pero una correlación promedio puede esconder cambios importantes en el tiempo.]
+]
+
+---
+
+# Preparar retornos en formato ancho
+
+Para calcular correlaciones entre activos, conviene tener una columna por activo.
+
+
+
+
+```r
+retornos_wide &lt;- retornos %&gt;%
+  select(date, symbol, ret_simple) %&gt;%
+  pivot_wider(
+    names_from = symbol,
+    values_from = ret_simple
+  ) %&gt;%
+  drop_na()
+
+head(retornos_wide)
+```
+
+---
+
+# Retornos en formato ancho
+
+
+|date       |SPY    |TLT    |GLD    |UUP    |
+|:----------|:------|:------|:------|:------|
+|2020-01-03 |-0.76% |1.54%  |1.33%  |0.12%  |
+|2020-01-06 |0.38%  |-0.57% |1.05%  |-0.23% |
+|2020-01-07 |-0.28% |-0.49% |0.39%  |0.35%  |
+|2020-01-08 |0.53%  |-0.66% |-0.75% |0.27%  |
+|2020-01-09 |0.68%  |0.35%  |-0.57% |0.19%  |
+|2020-01-10 |-0.29% |0.89%  |0.60%  |-0.08% |
+|2020-01-13 |0.69%  |-0.30% |-0.74% |0.00%  |
+|2020-01-14 |-0.15% |0.51%  |-0.09% |0.04%  |
+|2020-01-15 |0.23%  |0.66%  |0.58%  |-0.15% |
+|2020-01-16 |0.83%  |-0.32% |-0.16% |0.15%  |
+
+---
+
+# Matriz de correlación
+
+Primero miremos la correlación promedio de todo el periodo.
+
+Esto es útil, pero todavía es una foto muy general.
+
+---
+
+# Código: correlación promedio
+
+
+```r
+matriz_cor &lt;- retornos_wide %&gt;%
+  select(-date) %&gt;%
+  cor(use = "complete.obs")
+
+matriz_cor
+```
+
+---
+
+# Matriz de correlación
+
+
+|    |   SPY|   TLT|   GLD|   UUP|
+|:---|-----:|-----:|-----:|-----:|
+|SPY |  1.00| -0.11|  0.13| -0.15|
+|TLT | -0.11|  1.00|  0.20| -0.25|
+|GLD |  0.13|  0.20|  1.00| -0.42|
+|UUP | -0.15| -0.25| -0.42|  1.00|
+
+---
+
+# Cómo leer la matriz
+
+.pull-left[
+
+### Valores positivos
+
+Los activos tienden a moverse en la misma dirección.
+
+Mientras más cerca de 1, más fuerte esa relación lineal.
+
+]
+
+.pull-right[
+
+### Valores negativos
+
+Los activos tienden a moverse en direcciones opuestas.
+
+Puede ayudar a diversificar.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[Pero esta matriz resume todo el periodo en un solo número.]
+]
+
+---
+
+# Mapa de calor de correlación
+
+Podemos graficar la matriz para leerla más rápido.
+
+
+
+```r
+cor_long &lt;- as_tibble(matriz_cor, rownames = "activo_1") %&gt;%
+  pivot_longer(
+    cols = -activo_1,
+    names_to = "activo_2",
+    values_to = "correlacion"
+  )
+
+ggplot(cor_long,
+       aes(x = activo_1, y = activo_2, fill = correlacion)) +
+  geom_tile() +
+  geom_text(aes(label = round(correlacion, 2))) +
+  labs(
+    title = "Matriz de correlación de retornos",
+    x = "",
+    y = "",
+    fill = "Correlación"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+# Mapa de calor
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-96-1.png" width="60%" /&gt;
+
+---
+
+# Pero la correlación cambia
+
+Ahora miremos una correlación móvil.
+
+Por ejemplo, la correlación móvil entre:
+
+.center[
+.orange[SPY y TLT]
+]
+
+&lt;br&gt;
+
+Esto permite observar si la relación entre acciones y bonos fue estable o cambió con el tiempo.
+
+---
+
+# Código: correlación móvil
+
+
+```r
+correlacion_movil &lt;- retornos_wide %&gt;%
+  arrange(date) %&gt;%
+  mutate(
+    cor_spy_tlt_63d = slide2_dbl(
+      .x = SPY,
+      .y = TLT,
+      .f = ~ cor(.x, .y, use = "complete.obs"),
+      .before = 62,
+      .complete = TRUE
+    )
+  )
+
+head(correlacion_movil)
+```
+
+---
+
+# Código: gráfico correlación móvil
+
+
+```r
+ggplot(correlacion_movil,
+       aes(x = date, y = cor_spy_tlt_63d)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.7) +
+  labs(
+    title = "Correlación móvil: SPY vs TLT",
+    subtitle = "Ventana de 63 días",
+    x = "",
+    y = "Correlación móvil"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+# Correlación móvil
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-99-1.png" width="80%" /&gt;
+
+---
+
+# Cómo leer la correlación móvil
+
+.pull-left[
+
+### Sobre cero
+
+SPY y TLT tienden a moverse más en la misma dirección en esa ventana.
+
+]
+
+.pull-right[
+
+### Bajo cero
+
+Tienden a moverse en direcciones opuestas.
+
+Eso puede ayudar a diversificar.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[La diversificación depende de relaciones que pueden cambiar.]
+]
+
+---
+
+# Riesgo de confiar en promedios
+
+Una correlación promedio puede decir:
+
+.center[
+“estos activos diversifican”
+]
+
+Pero en una crisis puede pasar otra cosa.
+
+&lt;br&gt;
+
+.center[
+.orange[El problema no es solo la correlación promedio, sino la correlación cuando todo cae.]
+]
+
+&lt;br&gt;
+
+Esta idea será importante en gestión de portafolios y riesgo sistémico.
+
+---
+
+# Noveno hecho estilizado
+
+.center[
+# Las pérdidas extremas no son solo números
+]
+
+&lt;br&gt;
+
+Una pérdida extrema puede activar:
+
+* margen,
+* llamadas de liquidez,
+* ventas forzadas,
+* incumplimientos,
+* decisiones de cobertura,
+* reportes al comité.
+
+&lt;br&gt;
+
+.center[
+.orange[Por eso el análisis de riesgo debe conectar estadística con consecuencias financieras.]
+]
+
+---
+
+# Peores días del portafolio
+
+Construyamos ahora un portafolio con las posiciones hipotéticas que ya usamos antes.
+
+La idea es mirar no solo activos individuales, sino el P&amp;L agregado.
+
+---
+
+# Código: P&amp;L de portafolio
+
+
+```r
+pnl_portafolio &lt;- retornos_pnl %&gt;%
+  group_by(date) %&gt;%
+  summarise(
+    pnl_total = sum(pnl_diario, na.rm = TRUE),
+    perdida_total = if_else(pnl_total &lt; 0, -pnl_total, 0),
+    .groups = "drop"
+  )
+
+head(pnl_portafolio)
+```
+
+---
+
+# P&amp;L del portafolio
+
+
+|date       |pnl_total  |perdida_total |
+|:----------|:----------|:-------------|
+|2020-01-03 |$3,647.60  |$0.00         |
+|2020-01-06 |$1,859.53  |$0.00         |
+|2020-01-07 |-$1,048.09 |$1,048.09     |
+|2020-01-08 |-$619.34   |$619.34       |
+|2020-01-09 |$2,745.98  |$0.00         |
+|2020-01-10 |$2,162.44  |$0.00         |
+|2020-01-13 |$508.56    |$0.00         |
+|2020-01-14 |$555.21    |$0.00         |
+|2020-01-15 |$3,499.84  |$0.00         |
+|2020-01-16 |$2,454.97  |$0.00         |
+
+---
+
+# Gráfico de P&amp;L agregado
+
+
+```r
+ggplot(pnl_portafolio,
+       aes(x = date, y = pnl_total)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.45) +
+  scale_y_continuous(labels = dollar_format()) +
+  labs(
+    title = "P&amp;L diario del portafolio",
+    subtitle = "Ganancias y pérdidas agregadas de las posiciones hipotéticas",
+    x = "",
+    y = "P&amp;L total"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+# P&amp;L diario del portafolio
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-103-1.png" width="92%" /&gt;
+
+---
+
+# Peores días del portafolio
+
+Ahora miremos los peores días agregados.
+
+Esto permite pasar de “activo riesgoso” a “impacto total de la cartera”.
+
+---
+
+# Código: peores días del portafolio
+
+
+```r
+peores_dias_portafolio &lt;- pnl_portafolio %&gt;%
+  slice_min(order_by = pnl_total, n = 10, with_ties = FALSE)
+
+peores_dias_portafolio
+```
+
+---
+
+# Peores días del portafolio
+
+
+|date       |pnl_total   |perdida_total |
+|:----------|:-----------|:-------------|
+|2020-03-12 |-$43,093.70 |$43,093.70    |
+|2020-03-18 |-$36,065.58 |$36,065.58    |
+|2020-03-16 |-$34,677.84 |$34,677.84    |
+|2020-03-11 |-$29,181.12 |$29,181.12    |
+|2022-06-13 |-$26,859.17 |$26,859.17    |
+|2020-03-09 |-$25,746.40 |$25,746.40    |
+|2025-04-04 |-$23,710.04 |$23,710.04    |
+|2025-04-10 |-$22,663.32 |$22,663.32    |
+|2025-04-03 |-$22,407.82 |$22,407.82    |
+|2026-01-30 |-$21,672.89 |$21,672.89    |
+
+---
+
+# Cómo leer los peores días
+
+.pull-left[
+
+### Lectura estadística
+
+Son observaciones extremas de la muestra.
+
+Ayudan a mirar la cola izquierda del P&amp;L.
+
+]
+
+.pull-right[
+
+### Lectura de gestión
+
+Son días que podrían activar reportes, límites o decisiones.
+
+No son solo datos raros.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[En riesgo, una observación extrema puede ser una decisión urgente.]
+]
+
+---
+
+# Contribución al peor día
+
+Cuando el portafolio pierde mucho, también interesa saber qué activo explicó más la pérdida.
+
+Miremos el peor día del portafolio y descompongamos el P&amp;L por activo.
+
+---
+
+# Código: peor día y contribución
+
+
+```r
+peor_fecha &lt;- pnl_portafolio %&gt;%
+  slice_min(order_by = pnl_total, n = 1) %&gt;%
+  pull(date)
+
+contribucion_peor_dia &lt;- retornos_pnl %&gt;%
+  filter(date == peor_fecha) %&gt;%
+  select(date, nombre, ret_simple, pnl_diario, posicion_usd) %&gt;%
+  arrange(pnl_diario)
+
+contribucion_peor_dia
+```
+
+---
+
+# Contribución al peor día
+
+
+|date       |nombre            |ret_simple |pnl_diario  |posicion_usd |
+|:----------|:-----------------|:----------|:-----------|:------------|
+|2020-03-12 |Acciones EE.UU.   |-9.57%     |-$38,270.95 |$400,000     |
+|2020-03-12 |Oro               |-3.99%     |-$7,977.65  |$200,000     |
+|2020-03-12 |Bonos largo plazo |0.62%      |$1,549.39   |$250,000     |
+|2020-03-12 |Dólar             |1.07%      |$1,605.52   |$150,000     |
+
+---
+
+# Gráfico: contribución al peor día
+
+
+```r
+ggplot(contribucion_peor_dia,
+       aes(x = reorder(nombre, pnl_diario), y = pnl_diario)) +
+  geom_col(alpha = 0.8) +
+  coord_flip() +
+  scale_y_continuous(labels = dollar_format()) +
+  labs(
+    title = paste("Contribución al peor día del portafolio:", peor_fecha),
+    x = "",
+    y = "P&amp;L diario"
+  ) +
+  theme_minimal(base_size = 12)
+```
+
+---
+
+# Contribución al peor día
+
+&lt;img src="2_Clase_files/figure-html/unnamed-chunk-109-1.png" width="88%" /&gt;
+
+---
+
+# Qué aporta esta descomposición
+
+.pull-left[
+
+### No solo importa perder
+
+También importa saber de dónde vino la pérdida.
+
+]
+
+.pull-right[
+
+### Esto ayuda a decidir
+
+- reducir una posición,
+- diversificar,
+- cubrir,
+- revisar límites,
+- cambiar la composición del portafolio.
+
+]
+
+&lt;br&gt;
+
+.center[
+.orange[La gestión necesita atribución: quién explicó el daño.]
+]
+
+---
+
+# Diez ideas para llevar
+
+Hasta aquí vimos que los retornos financieros tienen varios patrones importantes.
+
+Pero no todos afectan la medición de la misma manera.
+
+Organicemos la lectura.
+
+---
+
+
+# Lectura integrada
+
+.pull-left[
+
+### Si veo colas pesadas
+
+Debo tener cuidado con modelos normales simples.
+
+VaR y ES deben interpretarse con prudencia.
+
+]
+
+.pull-right[
+
+### Si veo volatilidad cambiante
+
+Debo tener cuidado con usar una única volatilidad histórica.
+
+Puede ser necesario un modelo dinámico.
+
+]
+
+---
+
+# Lectura integrada
+
+.pull-left[
+
+### Si veo correlación variable
+
+La diversificación no debe darse por garantizada.
+
+Puede funcionar distinto en crisis.
+
+]
+
+.pull-right[
+
+### Si veo extremos concentrados
+
+El riesgo no está distribuido de forma uniforme.
+
+Hay periodos donde el monitoreo debe ser más intenso.
+
+]
+
+---
+
+
+# Actividad aplicada
+
+Tomando uno de los activos o el portafolio:
+
+1. Identifique un periodo de mayor volatilidad.
+2. Compare el retorno promedio con el peor retorno.
+3. Revise si hay señales de colas pesadas.
+4. Calcule una volatilidad móvil.
+5. Proponga una alerta de monitoreo.
+6. Explique qué decisión de gestión podría activarse.
+
+&lt;br&gt;
+
+.center[
+.orange[La idea no es solo calcular. La idea es interpretar.]
+]
+
+---
+
+
+# Puente a la siguiente sección
+
+Ya sabemos algo importante:
+
+.center[
+.orange[los retornos tienen comportamiento complejo.]
+]
+
+&lt;br&gt;
+
+Ahora la pregunta natural es:
+
+.center[
+### ¿podemos modelar esa dinámica?
+]
+
+&lt;br&gt;
+
+Primero veremos la diferencia entre:
+
+- modelos para la media,
+- modelos para la volatilidad.
+
+Y ahí aparece el puente hacia ARMA, regresión simple y modelos GARCH.
+
+
+
+
+
+
+
+---
+
+
+
+class: inverse, center, middle
+background-color: #122140
+
+.pull-left[
+
+.center[
+&lt;br&gt;&lt;br&gt;
+
+# Gracias!!!
+
+&lt;br&gt;
+
+
+
+### ¿Preguntas?
+
+&lt;br&gt;
+
+
+&lt;img src="img/qr-code.png" width="49%" style="display: block; margin: auto;" /&gt;
+
+]
+]
+
+
+.pull-right[
+
+&lt;br&gt; 
+&lt;br&gt; 
+&lt;img style="border-radius: 50%;" src="img/avatar.png"
+width="150px"
+/&gt;
+
+### [www.joaquibarandica.com](https://www.joaquibarandica.com)
+
+<i class="far fa-envelope" role="presentation" aria-label="envelope icon"></i> orlando.joaqui@correounivalle.edu.co
+
+&lt;img src="img/Logo.jpg" width="120%"&gt;
+
+]
+
+
+&lt;br&gt;&lt;br&gt;&lt;br&gt;
+
+
+
+
+
+
+
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script src="macros.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
