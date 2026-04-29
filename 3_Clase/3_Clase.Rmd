@@ -1,0 +1,5720 @@
+---
+title: "Modelación y gestión de riesgos financieros"
+subtitle: "Series de tiempo y riesgo condicional"
+author: "Orlando Joaqui-Barandica"
+institute: "Universidad del Valle"
+date: " "
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    css: 
+      - default
+      - rladies
+      - rladies-fonts
+      - fonts_mtheme.css
+      - sidney.css
+    seal: false  
+    nature: 
+      ratio: 16:9
+      beforeInit: "macros.js"
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+
+---
+
+
+
+```{r setup, include = FALSE}
+library(knitr)
+library(tidyverse)
+library(tidyquant)
+library(quantmod)
+library(timetk)
+library(forecast)
+library(tseries)
+library(scales)
+library(lubridate)
+library(slider)
+library(moments)
+library(shiny)
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  dpi = 300,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE,
+  fig.align = "center",
+  out.width = "90%"
+)
+
+options(htmltools.dir.version = FALSE)
+```
+
+
+
+class: inverse, left, bottom
+background-image: url("img/fondo.jpg")
+background-size: cover
+
+
+# **`r rmarkdown::metadata$title`**
+----
+
+## **`r rmarkdown::metadata$subtitle`**
+
+### `r rmarkdown::metadata$author`
+### `r rmarkdown::metadata$date`
+
+
+
+
+```{r xaringanExtra-share-again, echo=FALSE}
+xaringanExtra::use_share_again()
+```
+
+```{r xaringanExtra-clipboard, echo=FALSE}
+xaringanExtra::use_clipboard()
+```
+
+
+
+```{r datos-base, include=FALSE}
+# ---------------------------------------------------------
+# Datos base para toda la clase
+# ---------------------------------------------------------
+
+tickers <- c("SPY", "TSLA", "TLT", "GLD")
+
+precios <- purrr::map_dfr(tickers, function(tk) {
+  
+  datos <- quantmod::getSymbols(
+    Symbols = tk,
+    src = "yahoo",
+    from = "2020-01-01",
+    to = Sys.Date(),
+    auto.assign = FALSE
+  )
+  
+  tibble(
+    fecha = zoo::index(datos),
+    activo = tk,
+    precio = as.numeric(quantmod::Ad(datos))
+  )
+})
+
+retornos <- precios %>%
+  group_by(activo) %>%
+  arrange(fecha) %>%
+  mutate(
+    retorno_log = log(precio) - log(lag(precio)),
+    retorno_simple = precio / lag(precio) - 1
+  ) %>%
+  ungroup() %>%
+  drop_na()
+
+precios_tsla <- precios %>%
+  filter(activo == "TSLA") %>%
+  arrange(fecha)
+
+retornos_tsla <- retornos %>%
+  filter(activo == "TSLA") %>%
+  arrange(fecha)
+```
+
+
+---
+
+
+
+class: center, middle
+
+
+
+
+
+```{r, echo=FALSE, fig.align="center", out.width="20%"}
+knitr::include_graphics("img/univalle.jpg")
+```
+
+
+
+---
+
+
+
+
+
+
+class: center, middle
+
+
+.center[
+
+<br>
+
+
+
+<a href="https://www.joaquibarandica.com" target="_blank">
+  <img src="img/avatar.png"
+       style="border-radius: 80%; width: 220px; max-width: 30%; height: auto;"
+       alt="Avatar"/>
+</a>
+
+
+## Orlando Joaqui-Barandica
+
+
+Doctor en Ingeniería, Enf. Ingeniería Industrial **|** Magíster en Economía Aplicada **|** Estadístico.
+
+
+
+`r anicon::faa("envelope", animate = "passing")` orlando.joaqui@correounivalle.edu.co 
+]
+
+
+
+.center[
+### [www.joaquibarandica.com](https://www.joaquibarandica.com)
+]
+
+
+
+
+
+
+
+
+
+---
+
+
+# Contenido de la sesión
+
+.pull-left[
+
+### 1. Series de tiempo y riesgo financiero
+
+### 2. Estacionariedad y transformación
+
+### 3. Rezagos, ACF y PACF
+
+]
+
+.pull-right[
+
+### 4. ARIMA para pronóstico
+
+### 5. Retornos, ARMA y residuos
+
+
+
+]
+
+<br>
+
+.center[
+La clase va de una idea sencilla:  
+.orange[**primero entendemos la serie, después modelamos el riesgo.**]
+]
+
+
+---
+
+
+class: inverse, center, middle
+
+# Sección 1
+
+## Series de tiempo y riesgo financiero
+
+---
+
+# ¿Por qué hablar de series de tiempo?
+
+En finanzas casi nada ocurre como una foto aislada.
+
+Un precio, una tasa de interés, un índice bursátil o un tipo de cambio tienen una historia.
+
+Esa historia importa porque muchas decisiones financieras dependen de cómo cambia una variable en el tiempo.
+
+<br>
+
+.pull-left[
+### Ejemplos
+
+- Precio de una acción.
+- Tasa de cambio.
+- Tasa de interés.
+- Índice bursátil.
+- Valor de un portafolio.
+]
+
+.pull-right[
+### Pregunta natural
+
+¿El comportamiento pasado de la serie nos dice algo sobre su comportamiento futuro?
+]
+
+---
+
+# La pregunta de riesgo
+
+Cuando hablamos de riesgo financiero, la pregunta no es solamente:
+
+.center[
+## ¿cuánto valdrá el activo mañana?
+]
+
+<br>
+
+También nos interesa:
+
+.center[
+## ¿cuánto podría perder si mañana es un mal día?
+]
+
+<br>
+
+Esa segunda pregunta necesita mirar cambios, variabilidad, colas y periodos de turbulencia.
+
+---
+
+# Precio y riesgo no son lo mismo
+
+.pull-left[
+### Precio
+
+El precio muestra el nivel de una variable.
+
+Por ejemplo:
+
+- SPY cuesta 500.
+- TSLA cuesta 180.
+- GLD cuesta 220.
+
+El precio responde a la pregunta:
+
+.center[
+**¿cuánto vale?**
+]
+]
+
+.pull-right[
+### Retorno
+
+El retorno muestra el cambio relativo.
+
+Por ejemplo:
+
+- subió 1%.
+- cayó 3%.
+- perdió 5% en un día.
+
+El retorno responde a la pregunta:
+
+.center[
+**¿cuánto ganó o perdió?**
+]
+]
+
+---
+
+
+
+# Paquetes de trabajo
+
+Este primer bloque carga las librerías principales para descargar precios, organizar datos, graficar y trabajar con series de tiempo.
+
+```{r codigo-paquetes, eval=FALSE, echo=TRUE}
+library(tidyverse)
+library(tidyquant)
+library(quantmod)
+library(timetk)
+library(forecast)
+library(tseries)
+library(scales)
+library(lubridate)
+library(slider)
+library(moments)
+```
+
+---
+
+# Activos de ejemplo
+
+Vamos a trabajar con cuatro activos.
+
+La idea es tener instrumentos con comportamientos distintos: mercado accionario, acción individual, bonos y oro.
+
+```{r codigo-tickers, eval=FALSE, echo=TRUE}
+tickers <- c("SPY", "TSLA", "TLT", "GLD")
+```
+
+<br>
+
+.pull-left[
+### SPY
+
+ETF que sigue al S&P 500.
+]
+
+.pull-right[
+### TSLA
+
+Acción individual con alta volatilidad.
+]
+
+.pull-left[
+### TLT
+
+ETF de bonos del Tesoro de largo plazo.
+]
+
+.pull-right[
+### GLD
+
+ETF asociado al oro.
+]
+
+---
+
+# Descargamos precios
+
+Este bloque descarga precios ajustados desde Yahoo Finance.
+
+Usamos `auto.assign = FALSE` para evitar que R cree objetos sueltos como `SPY`, `TSLA`, `TLT` o `GLD`.
+
+```{r codigo-descarga-precios, eval=FALSE, echo=TRUE}
+precios <- purrr::map_dfr(tickers, function(tk) {
+  
+  datos <- quantmod::getSymbols(
+    Symbols = tk,
+    src = "yahoo",
+    from = "2020-01-01",
+    to = Sys.Date(),
+    auto.assign = FALSE
+  )
+  
+  tibble(
+    fecha = zoo::index(datos),
+    activo = tk,
+    precio = as.numeric(quantmod::Ad(datos))
+  )
+})
+```
+
+---
+
+# ¿Qué construimos?
+
+```{r tabla-precios, echo=FALSE}
+precios %>%
+  group_by(activo) %>%
+  slice_head(n = 3) %>%
+  ungroup() %>%
+  knitr::kable(
+    digits = 2,
+    col.names = c("Fecha", "Activo", "Precio ajustado")
+  )
+```
+
+<br>
+
+Esta tabla ya tiene una estructura ordenada:
+
+- una columna de fecha,
+- una columna de activo,
+- una columna de precio ajustado.
+
+---
+
+# Código para graficar precios
+
+Este código genera un gráfico de los precios ajustados.
+
+Lo importante es que todavía estamos mirando las series en niveles.
+
+```{r codigo-grafico-precios, eval=FALSE, echo=TRUE}
+ggplot(precios, aes(x = fecha, y = precio, color = activo)) +
+  geom_line(linewidth = 0.7) +
+  facet_wrap(~ activo, scales = "free_y") +
+  scale_y_continuous(labels = dollar_format()) +
+  labs(
+    title = "Precios ajustados",
+    subtitle = "Series en niveles",
+    x = NULL,
+    y = "Precio ajustado"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Precios ajustados
+
+```{r grafico-precios, echo=FALSE, fig.height=3.5}
+ggplot(precios, aes(x = fecha, y = precio, color = activo)) +
+  geom_line(linewidth = 0.7, show.legend = FALSE) +
+  facet_wrap(~ activo, scales = "free_y") +
+  scale_y_continuous(labels = dollar_format()) +
+  labs(
+    title = "Precios ajustados",
+    subtitle = "Series en niveles",
+    x = NULL,
+    y = "Precio ajustado"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# ¿Qué se ve en los precios?
+
+Los precios muestran trayectorias muy distintas.
+
+Algunos activos tienen tendencia, otros tienen caídas fuertes, recuperaciones o periodos de alta variación.
+
+<br>
+
+.pull-left[
+### Lectura visual
+
+El precio permite ver la historia del activo.
+
+Nos muestra si el activo subió, cayó o cambió de nivel.
+]
+
+.pull-right[
+### Lectura de riesgo
+
+Pero el precio no nos dice directamente cuánto se ganó o perdió cada día.
+
+Para eso necesitamos retornos.
+]
+
+---
+
+# Construimos retornos
+
+Ahora convertimos precios en retornos.
+
+En riesgo financiero, esta transformación es central porque pasamos del nivel del activo a su variación diaria.
+
+```{r codigo-retornos, eval=FALSE, echo=TRUE}
+retornos <- precios %>%
+  group_by(activo) %>%
+  arrange(fecha) %>%
+  mutate(
+    retorno_log = log(precio) - log(lag(precio)),
+    retorno_simple = precio / lag(precio) - 1
+  ) %>%
+  ungroup() %>%
+  drop_na()
+```
+
+---
+
+# Tabla de retornos
+
+```{r tabla-retornos, echo=FALSE}
+retornos %>%
+  select(fecha, activo, precio, retorno_simple, retorno_log) %>%
+  group_by(activo) %>%
+  slice_head(n = 3) %>%
+  ungroup() %>%
+  mutate(
+    retorno_simple = percent(retorno_simple, accuracy = 0.01),
+    retorno_log = percent(retorno_log, accuracy = 0.01)
+  ) %>%
+  knitr::kable(
+    col.names = c("Fecha", "Activo", "Precio", "Retorno simple", "Retorno log")
+  )
+```
+
+<br>
+
+Cada fila muestra cuánto cambió el activo de un día al siguiente.
+
+---
+
+# Código para graficar retornos
+
+Ahora miramos los retornos logarítmicos diarios.
+
+Este gráfico ya habla más directamente de riesgo.
+
+```{r codigo-grafico-retornos, eval=FALSE, echo=TRUE}
+ggplot(retornos, aes(x = fecha, y = retorno_log, color = activo)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.5) +
+  facet_wrap(~ activo, scales = "free_y") +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retornos logarítmicos diarios",
+    subtitle = "Cambios diarios en el precio ajustado",
+    x = NULL,
+    y = "Retorno diario"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Retornos logarítmicos diarios
+
+```{r grafico-retornos, echo=FALSE, fig.height=3.5}
+ggplot(retornos, aes(x = fecha, y = retorno_log, color = activo)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.5, show.legend = FALSE) +
+  facet_wrap(~ activo, scales = "free_y") +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retornos logarítmicos diarios",
+    subtitle = "Cambios diarios en el precio ajustado",
+    x = NULL,
+    y = "Retorno diario"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# ¿Qué cambia al mirar retornos?
+
+En precios vemos niveles.
+
+En retornos vemos movimientos.
+
+<br>
+
+.pull-left[
+### En precios
+
+La serie puede subir durante mucho tiempo.
+
+También puede tener tendencia.
+
+Eso hace difícil comparar directamente el riesgo entre activos.
+]
+
+.pull-right[
+### En retornos
+
+La serie se mueve alrededor de cero.
+
+Aparecen días tranquilos y días turbulentos.
+
+Aquí ya se empieza a ver el riesgo.
+]
+
+---
+
+# Una lectura financiera
+
+En los retornos no solo importa si el activo sube o baja.
+
+También importa qué tan grande es el movimiento.
+
+<br>
+
+.center[
+## Un día de -1% no es igual a un día de -8%
+]
+
+<br>
+
+Por eso, más adelante vamos a conectar los retornos con:
+
+- volatilidad,
+- pérdidas extremas,
+- VaR,
+- riesgo condicional.
+
+---
+
+# Código para mirar una distribución
+
+Además de mirar la serie en el tiempo, también podemos mirar la distribución de los retornos.
+
+Aquí usamos TSLA como ejemplo.
+
+```{r codigo-histograma-tsla, eval=FALSE, echo=TRUE}
+retornos_tsla <- retornos %>%
+  filter(activo == "TSLA")
+
+ggplot(retornos_tsla, aes(x = retorno_log)) +
+  geom_histogram(bins = 60) +
+  scale_x_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Distribución de retornos diarios de TSLA",
+    subtitle = "Histograma de retornos logarítmicos",
+    x = "Retorno diario",
+    y = "Frecuencia"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Distribución de retornos de TSLA
+
+```{r histograma-tsla, echo=FALSE, fig.height=3.5}
+ggplot(retornos_tsla, aes(x = retorno_log)) +
+  geom_histogram(bins = 60) +
+  scale_x_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Distribución de retornos diarios de TSLA",
+    subtitle = "Histograma de retornos logarítmicos",
+    x = "Retorno diario",
+    y = "Frecuencia"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# ¿Qué nos dice el histograma?
+
+.pull-left[
+### Centro
+
+Muchos retornos están cerca de cero.
+
+Eso significa que en muchos días el cambio diario no es tan grande.
+]
+
+.pull-right[
+### Colas
+
+También aparecen retornos bastante positivos o bastante negativos.
+
+Esos días extremos son centrales para riesgo financiero.
+]
+
+<br>
+
+.center[
+En riesgo no nos preocupa solamente el promedio.  
+Nos preocupan especialmente los malos escenarios.
+]
+
+---
+
+# Una primera medida de resumen
+
+Este código calcula algunas estadísticas básicas de los retornos de TSLA.
+
+No es todavía un modelo de riesgo, pero nos da una primera lectura.
+
+```{r codigo-resumen-tsla, eval=FALSE, echo=TRUE}
+resumen_tsla <- retornos_tsla %>%
+  summarise(
+    media = mean(retorno_log),
+    volatilidad = sd(retorno_log),
+    minimo = min(retorno_log),
+    maximo = max(retorno_log),
+    asimetria = moments::skewness(retorno_log),
+    curtosis = moments::kurtosis(retorno_log)
+  )
+
+resumen_tsla
+```
+
+---
+
+# Resumen de retornos de TSLA
+
+```{r resumen-tsla, echo=FALSE}
+retornos_tsla %>%
+  summarise(
+    media = mean(retorno_log),
+    volatilidad = sd(retorno_log),
+    minimo = min(retorno_log),
+    maximo = max(retorno_log),
+    asimetria = moments::skewness(retorno_log),
+    curtosis = moments::kurtosis(retorno_log)
+  ) %>%
+  mutate(
+    media = percent(media, accuracy = 0.01),
+    volatilidad = percent(volatilidad, accuracy = 0.01),
+    minimo = percent(minimo, accuracy = 0.01),
+    maximo = percent(maximo, accuracy = 0.01),
+    asimetria = round(asimetria, 2),
+    curtosis = round(curtosis, 2)
+  ) %>%
+  knitr::kable()
+```
+
+---
+
+# ¿Cómo leer estas medidas?
+
+.pull-left[
+### Media
+
+Muestra el retorno promedio diario.
+
+En datos diarios suele ser pequeña.
+]
+
+.pull-right[
+### Volatilidad
+
+Muestra qué tanto se mueve el retorno alrededor de su promedio.
+
+En riesgo financiero suele ser más importante que la media diaria.
+]
+
+.pull-left[
+### Mínimo
+
+Muestra el peor retorno observado en la muestra.
+]
+
+.pull-right[
+### Curtosis
+
+Ayuda a ver si hay más eventos extremos que en una distribución normal.
+]
+
+---
+
+
+# Actividad
+
+Cada grupo elige un activo:
+
+- SPY
+- TSLA
+- TLT
+- GLD
+
+<br>
+
+Y responde:
+
+1. ¿Cuál activo parece más volátil visualmente?
+2. ¿Dónde se observan los días más extremos?
+3. ¿La media diaria parece grande o pequeña frente a la volatilidad?
+4. ¿Qué activo les preocuparía más desde una mirada de riesgo?
+
+---
+
+# Código base para la actividad
+
+```{r codigo-actividad-seccion-1, eval=FALSE, echo=TRUE}
+activo_elegido <- "TSLA"
+
+retornos_activo <- retornos %>%
+  filter(activo == activo_elegido)
+
+retornos_activo %>%
+  summarise(
+    media = mean(retorno_log),
+    volatilidad = sd(retorno_log),
+    peor_dia = min(retorno_log),
+    mejor_dia = max(retorno_log),
+    asimetria = moments::skewness(retorno_log),
+    curtosis = moments::kurtosis(retorno_log)
+  )
+```
+
+---
+
+
+class: inverse, center, middle
+
+# Sección 2
+
+## Estacionariedad y transformación
+
+---
+
+# ¿Por qué hablar de estacionariedad?
+
+Antes de modelar una serie financiera, necesitamos preguntarnos algo muy básico:
+
+.center[
+## ¿la serie se comporta de forma más o menos estable en el tiempo?
+]
+
+<br>
+
+Si una serie cambia mucho de nivel, de tendencia o de variabilidad, el modelo puede confundirse.
+
+Por eso, antes de correr ARIMA, ARMA o GARCH, revisamos si la serie es estacionaria.
+
+---
+
+# La idea de estacionariedad
+
+Una serie estacionaria es una serie que mantiene ciertas propiedades relativamente estables en el tiempo.
+
+<br>
+
+.pull-left[
+### En palabras sencillas
+
+Una serie estacionaria no se va “alejando” permanentemente.
+
+Se mueve alrededor de un nivel más o menos estable.
+]
+
+.pull-right[
+### En finanzas
+
+Los precios suelen no ser estacionarios.
+
+Los retornos suelen ser mucho más cercanos a una serie estacionaria.
+]
+
+---
+
+# ¿Qué mirar visualmente?
+
+Antes de hacer una prueba formal, uno puede mirar la serie.
+
+<br>
+
+Una serie no estacionaria puede mostrar:
+
+- tendencia persistente,
+- cambios fuertes de nivel,
+- crecimiento acumulado,
+- caídas o subidas permanentes.
+
+<br>
+
+Una serie más estacionaria suele:
+
+- fluctuar alrededor de un nivel,
+- no tener una tendencia clara,
+- mantener una variabilidad relativamente estable.
+
+---
+
+# Seleccionamos un activo
+
+Vamos a trabajar con TSLA para ver claramente la diferencia entre precio y retorno.
+
+```{r codigo-seleccion-tsla, eval=FALSE, echo=TRUE}
+precios_tsla <- precios %>%
+  filter(activo == "TSLA") %>%
+  arrange(fecha)
+
+retornos_tsla <- retornos %>%
+  filter(activo == "TSLA") %>%
+  arrange(fecha)
+```
+
+---
+
+# Código para graficar el precio
+
+Este gráfico muestra la serie en niveles.
+
+Aquí todavía estamos mirando el precio ajustado, no el retorno.
+
+```{r codigo-grafico-precio-tsla, eval=FALSE, echo=TRUE}
+ggplot(precios_tsla, aes(x = fecha, y = precio)) +
+  geom_line(linewidth = 0.7) +
+  scale_y_continuous(labels = dollar_format()) +
+  labs(
+    title = "Precio ajustado de TSLA",
+    subtitle = "Serie en niveles",
+    x = NULL,
+    y = "Precio ajustado"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Precio ajustado de TSLA
+
+```{r grafico-precio-tsla, echo=FALSE, fig.height=3.5}
+ggplot(precios_tsla, aes(x = fecha, y = precio)) +
+  geom_line(linewidth = 0.7) +
+  scale_y_continuous(labels = dollar_format()) +
+  labs(
+    title = "Precio ajustado de TSLA",
+    subtitle = "Serie en niveles",
+    x = NULL,
+    y = "Precio ajustado"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura del precio
+
+El precio de TSLA no se mueve alrededor de un nivel fijo.
+
+Tiene subidas fuertes, caídas fuertes y cambios importantes de nivel.
+
+<br>
+
+.center[
+## Esto es típico en precios financieros.
+]
+
+<br>
+
+Por eso, modelar directamente precios puede ser problemático cuando queremos estudiar riesgo diario.
+
+---
+
+# Código para graficar retornos
+
+Ahora miramos los retornos logarítmicos diarios.
+
+La pregunta cambia: ya no preguntamos cuánto vale TSLA, sino cuánto cambia diariamente.
+
+```{r codigo-grafico-retorno-tsla, eval=FALSE, echo=TRUE}
+ggplot(retornos_tsla, aes(x = fecha, y = retorno_log)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.5) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retornos logarítmicos diarios de TSLA",
+    subtitle = "Serie transformada a cambios diarios",
+    x = NULL,
+    y = "Retorno diario"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Retornos logarítmicos diarios de TSLA
+
+```{r grafico-retorno-tsla, echo=FALSE, fig.height=3.5}
+ggplot(retornos_tsla, aes(x = fecha, y = retorno_log)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.5) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retornos logarítmicos diarios de TSLA",
+    subtitle = "Serie transformada a cambios diarios",
+    x = NULL,
+    y = "Retorno diario"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura de los retornos
+
+Ahora la serie se ve diferente.
+
+<br>
+
+.pull-left[
+### Precio
+
+Se mueve en niveles.
+
+Puede tener tendencia.
+
+Puede crecer o caer durante largos periodos.
+]
+
+.pull-right[
+### Retorno
+
+Se mueve alrededor de cero.
+
+Tiene días tranquilos y días extremos.
+
+Es más útil para estudiar riesgo.
+]
+
+---
+
+# Recuerden
+
+El retorno logarítmico se calcula como la diferencia entre logaritmos del precio.
+
+.center[
+## retorno log = log(precio de hoy) - log(precio de ayer)
+]
+
+<br>
+
+En la práctica, para cambios pequeños, el retorno logarítmico y el retorno simple son muy parecidos.
+
+Pero los log-retornos son cómodos para trabajar con series financieras.
+
+---
+
+
+# Transformación paso a paso
+
+Podemos verlo como una cadena:
+
+<br>
+
+.center[
+### Precio  
+#### ↓ logaritmo  
+### Log-precio  
+#### ↓ diferencia  
+### Retorno logarítmico
+]
+
+<br>
+
+.orange[La diferencia del log-precio nos da una serie más adecuada para modelar cambios diarios.]
+
+---
+
+# Código para construir log-precio y diferencia
+
+Este bloque construye explícitamente el log-precio y su primera diferencia.
+
+```{r codigo-log-diferencia, eval=FALSE, echo=TRUE}
+tsla_transformada <- precios_tsla %>%
+  mutate(
+    log_precio = log(precio),
+    diferencia_log = log_precio - lag(log_precio)
+  ) %>%
+  drop_na()
+
+tsla_transformada %>%
+  select(fecha, precio, log_precio, diferencia_log) %>%
+  slice_head(n = 10)
+```
+
+---
+
+# Tabla de transformación
+
+```{r tabla-log-diferencia, echo=FALSE}
+precios_tsla %>%
+  mutate(
+    log_precio = log(precio),
+    diferencia_log = log_precio - lag(log_precio)
+  ) %>%
+  drop_na() %>%
+  select(fecha, precio, log_precio, diferencia_log) %>%
+  slice_head(n = 10) %>%
+  mutate(
+    precio = round(precio, 2),
+    log_precio = round(log_precio, 4),
+    diferencia_log = percent(diferencia_log, accuracy = 0.01)
+  ) %>%
+  knitr::kable(
+    col.names = c("Fecha", "Precio", "Log-precio", "Diferencia del log")
+  )
+```
+
+---
+
+# Código para comparar log-precio y retorno
+
+Este gráfico muestra dos series distintas:
+
+- el log-precio,
+- la diferencia del log-precio.
+
+```{r codigo-log-vs-diferencia, eval=FALSE, echo=TRUE}
+tsla_transformada_larga <- tsla_transformada %>%
+  select(fecha, log_precio, diferencia_log) %>%
+  pivot_longer(
+    cols = c(log_precio, diferencia_log),
+    names_to = "serie",
+    values_to = "valor"
+  )
+
+ggplot(tsla_transformada_larga, aes(x = fecha, y = valor)) +
+  geom_line(linewidth = 0.6) +
+  facet_wrap(~ serie, scales = "free_y", ncol = 1) +
+  labs(
+    title = "Log-precio y diferencia del log-precio",
+    subtitle = "La diferencia del log-precio corresponde al retorno logarítmico",
+    x = NULL,
+    y = NULL
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Log-precio y diferencia del log-precio
+
+```{r log-vs-diferencia, echo=FALSE, fig.height=3.5}
+tsla_transformada <- precios_tsla %>%
+  mutate(
+    log_precio = log(precio),
+    diferencia_log = log_precio - lag(log_precio)
+  ) %>%
+  drop_na()
+
+tsla_transformada_larga <- tsla_transformada %>%
+  select(fecha, log_precio, diferencia_log) %>%
+  pivot_longer(
+    cols = c(log_precio, diferencia_log),
+    names_to = "serie",
+    values_to = "valor"
+  )
+
+ggplot(tsla_transformada_larga, aes(x = fecha, y = valor)) +
+  geom_line(linewidth = 0.6) +
+  facet_wrap(~ serie, scales = "free_y", ncol = 1) +
+  labs(
+    title = "Log-precio y diferencia del log-precio",
+    subtitle = "La diferencia del log-precio corresponde al retorno logarítmico",
+    x = NULL,
+    y = NULL
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura de la transformación
+
+El log-precio todavía conserva la historia acumulada del precio.
+
+La diferencia del log-precio ya muestra cambios diarios.
+
+<br>
+
+.center[
+## La primera diferencia ayuda a quitar tendencia.
+]
+
+<br>
+
+En series financieras, este paso es muy común: pasar de precios a retornos.
+
+---
+
+# Prueba ADF
+
+La prueba ADF ayuda a evaluar si una serie tiene raíz unitaria.
+
+Dicho más sencillo:
+
+<br>
+
+.center[
+## ayuda a revisar si una serie parece no estacionaria.
+]
+
+<br>
+
+La hipótesis nula de la prueba ADF es que la serie tiene raíz unitaria.
+
+---
+
+# Cómo leer la prueba ADF
+
+.pull-left[
+### Si el p-valor es alto
+
+No rechazamos la hipótesis de raíz unitaria.
+
+La serie puede ser no estacionaria.
+]
+
+.pull-right[
+### Si el p-valor es bajo
+
+Rechazamos la hipótesis de raíz unitaria.
+
+La serie tiene evidencia de estacionariedad.
+]
+
+<br>
+
+.center[
+Usualmente usamos 5% como referencia.
+]
+
+---
+
+# Código para aplicar ADF
+
+Aplicamos la prueba al precio y al retorno de TSLA.
+
+```{r codigo-adf, eval=FALSE, echo=TRUE}
+adf_precio <- tseries::adf.test(precios_tsla$precio)
+
+adf_retorno <- tseries::adf.test(retornos_tsla$retorno_log)
+
+resultados_adf <- tibble(
+  serie = c("Precio ajustado", "Retorno logarítmico"),
+  estadistico = c(
+    as.numeric(adf_precio$statistic),
+    as.numeric(adf_retorno$statistic)
+  ),
+  p_valor = c(
+    adf_precio$p.value,
+    adf_retorno$p.value
+  )
+)
+
+resultados_adf
+```
+
+---
+
+# Resultados de la prueba ADF
+
+```{r tabla-adf, echo=FALSE}
+adf_precio <- tseries::adf.test(precios_tsla$precio)
+adf_retorno <- tseries::adf.test(retornos_tsla$retorno_log)
+
+resultados_adf <- tibble(
+  serie = c("Precio ajustado", "Retorno logarítmico"),
+  estadistico = c(
+    as.numeric(adf_precio$statistic),
+    as.numeric(adf_retorno$statistic)
+  ),
+  p_valor = c(
+    adf_precio$p.value,
+    adf_retorno$p.value
+  )
+)
+
+resultados_adf %>%
+  mutate(
+    estadistico = round(estadistico, 3),
+    p_valor = round(p_valor, 4),
+    lectura = if_else(
+      p_valor < 0.05,
+      "Evidencia de estacionariedad",
+      "No se rechaza raíz unitaria"
+    )
+  ) %>%
+  knitr::kable(
+    col.names = c("Serie", "Estadístico ADF", "p-valor", "Lectura")
+  )
+```
+
+---
+
+# Lectura de la prueba
+
+Lo usual en finanzas es encontrar algo parecido a esto:
+
+<br>
+
+.pull-left[
+### Precio
+
+El precio suele parecer no estacionario.
+
+Por eso no siempre conviene modelarlo directamente.
+]
+
+.pull-right[
+### Retorno
+
+El retorno suele mostrar más evidencia de estacionariedad.
+
+Por eso se usa más en riesgo financiero.
+]
+
+<br>
+
+.center[
+La transformación no es un detalle técnico.  
+Es lo que permite pasar de una serie acumulada a una serie de cambios.
+]
+
+---
+
+# Media móvil y volatilidad móvil
+
+La estacionariedad también se puede mirar con ventanas móviles.
+
+Si calculamos media y volatilidad en ventanas de tiempo, podemos revisar si esas medidas cambian mucho.
+
+<br>
+
+Esto es importante porque en finanzas los retornos pueden tener media relativamente estable, pero volatilidad cambiante.
+
+---
+
+# Código para media y volatilidad móvil
+
+Calculamos media y desviación estándar usando una ventana de 63 días.
+
+Aproximadamente, 63 días equivalen a tres meses bursátiles.
+
+```{r codigo-rolling-tsla, eval=FALSE, echo=TRUE}
+rolling_tsla <- retornos_tsla %>%
+  arrange(fecha) %>%
+  mutate(
+    media_63d = slide_dbl(
+      retorno_log,
+      mean,
+      .before = 62,
+      .complete = TRUE
+    ),
+    volatilidad_63d = slide_dbl(
+      retorno_log,
+      sd,
+      .before = 62,
+      .complete = TRUE
+    )
+  )
+```
+
+---
+
+# Código para graficar media móvil
+
+```{r codigo-media-movil, eval=FALSE, echo=TRUE}
+ggplot(rolling_tsla, aes(x = fecha, y = media_63d)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.7) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1)) +
+  labs(
+    title = "Media móvil de retornos de TSLA",
+    subtitle = "Ventana móvil de 63 días",
+    x = NULL,
+    y = "Media móvil"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Media móvil de retornos
+
+```{r media-movil, echo=FALSE, fig.height=3.5}
+rolling_tsla <- retornos_tsla %>%
+  arrange(fecha) %>%
+  mutate(
+    media_63d = slide_dbl(
+      retorno_log,
+      mean,
+      .before = 62,
+      .complete = TRUE
+    ),
+    volatilidad_63d = slide_dbl(
+      retorno_log,
+      sd,
+      .before = 62,
+      .complete = TRUE
+    )
+  )
+
+ggplot(rolling_tsla, aes(x = fecha, y = media_63d)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.7) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1)) +
+  labs(
+    title = "Media móvil de retornos de TSLA",
+    subtitle = "Ventana móvil de 63 días",
+    x = NULL,
+    y = "Media móvil"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura de la media móvil
+
+La media móvil se mueve alrededor de cero.
+
+Eso es típico en retornos diarios.
+
+<br>
+
+.center[
+## La media diaria suele ser pequeña y difícil de predecir.
+]
+
+<br>
+
+Por eso, en gestión de riesgos, muchas veces la atención se mueve hacia la volatilidad.
+
+---
+
+# Código para graficar volatilidad móvil
+
+Ahora graficamos la volatilidad móvil de 63 días.
+
+```{r codigo-volatilidad-movil, eval=FALSE, echo=TRUE}
+ggplot(rolling_tsla, aes(x = fecha, y = volatilidad_63d)) +
+  geom_line(linewidth = 0.7) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1)) +
+  labs(
+    title = "Volatilidad móvil de retornos de TSLA",
+    subtitle = "Ventana móvil de 63 días",
+    x = NULL,
+    y = "Volatilidad diaria"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Volatilidad móvil de retornos
+
+```{r volatilidad-movil, echo=FALSE, fig.height=3.5}
+ggplot(rolling_tsla, aes(x = fecha, y = volatilidad_63d)) +
+  geom_line(linewidth = 0.7) +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1)) +
+  labs(
+    title = "Volatilidad móvil de retornos de TSLA",
+    subtitle = "Ventana móvil de 63 días",
+    x = NULL,
+    y = "Volatilidad diaria"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura de la volatilidad móvil
+
+La volatilidad no se mantiene constante.
+
+Hay periodos tranquilos y periodos turbulentos.
+
+<br>
+
+.center[
+## Esta es una de las razones para usar modelos GARCH más adelante.
+]
+
+<br>
+
+El retorno puede ser más estacionario que el precio, pero su volatilidad puede cambiar en el tiempo.
+
+---
+
+# Una idea clave para riesgo
+
+La estacionariedad no significa que la serie sea aburrida.
+
+Tampoco significa que no haya crisis.
+
+<br>
+
+En retornos financieros podemos tener:
+
+- media cercana a cero,
+- eventos extremos,
+- volatilidad cambiante,
+- agrupamiento de volatilidad.
+
+<br>
+
+Esto abre la puerta a modelos de riesgo condicional.
+
+---
+
+# Código para comparar activos
+
+Ahora revisamos la volatilidad móvil para todos los activos.
+
+```{r codigo-rolling-activos, eval=FALSE, echo=TRUE}
+rolling_activos <- retornos %>%
+  group_by(activo) %>%
+  arrange(fecha) %>%
+  mutate(
+    volatilidad_63d = slide_dbl(
+      retorno_log,
+      sd,
+      .before = 62,
+      .complete = TRUE
+    )
+  ) %>%
+  ungroup()
+```
+
+---
+
+# Código para graficar volatilidad por activo
+
+```{r codigo-grafico-rolling-activos, eval=FALSE, echo=TRUE}
+ggplot(rolling_activos, aes(x = fecha, y = volatilidad_63d, color = activo)) +
+  geom_line(linewidth = 0.7) +
+  facet_wrap(~ activo, scales = "free_y") +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1)) +
+  labs(
+    title = "Volatilidad móvil por activo",
+    subtitle = "Ventana móvil de 63 días",
+    x = NULL,
+    y = "Volatilidad diaria"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Volatilidad móvil por activo
+
+```{r grafico-rolling-activos, echo=FALSE, fig.height=3.5}
+rolling_activos <- retornos %>%
+  group_by(activo) %>%
+  arrange(fecha) %>%
+  mutate(
+    volatilidad_63d = slide_dbl(
+      retorno_log,
+      sd,
+      .before = 62,
+      .complete = TRUE
+    )
+  ) %>%
+  ungroup()
+
+ggplot(rolling_activos, aes(x = fecha, y = volatilidad_63d, color = activo)) +
+  geom_line(linewidth = 0.7, show.legend = FALSE) +
+  facet_wrap(~ activo, scales = "free_y") +
+  scale_y_continuous(labels = percent_format(accuracy = 0.1)) +
+  labs(
+    title = "Volatilidad móvil por activo",
+    subtitle = "Ventana móvil de 63 días",
+    x = NULL,
+    y = "Volatilidad diaria"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura comparativa
+
+No todos los activos tienen el mismo riesgo.
+
+<br>
+
+.pull-left[
+### TSLA
+
+Suele mostrar movimientos más fuertes.
+
+Tiene mayor variabilidad diaria.
+]
+
+.pull-right[
+### SPY, TLT y GLD
+
+Pueden ser más estables, aunque también tienen periodos de estrés.
+
+El riesgo aparece de forma distinta en cada activo.
+]
+
+---
+
+# Actividad en clase
+
+Cada grupo elige 4 activos (acciones tecnológicas) y responde desde un enfoque comparativo:
+
+1. ¿El precio parece estacionario?
+2. ¿El retorno parece más estable que el precio?
+3. ¿La volatilidad móvil es constante?
+4. ¿En qué periodos se observan aumentos fuertes de volatilidad?
+
+
+---
+
+
+# Importante
+
+La transformación es el primer paso serio en modelación financiera.
+
+<br>
+
+.center[
+## Precio: muestra niveles y suele no ser estacionario.
+]
+
+.center[
+## Retorno: muestra cambios y suele ser más estacionario.
+]
+
+.center[
+## Volatilidad: puede cambiar en el tiempo.
+]
+
+<br>
+
+Por eso, la siguiente pregunta es natural:
+
+.center[
+## ¿los retornos tienen memoria?
+]
+
+
+
+---
+
+
+class: inverse, center, middle
+
+# Sección 3
+
+## Rezagos, ACF y PACF
+
+---
+
+# ¿Por qué hablar de rezagos?
+
+En una serie de tiempo, el orden importa.
+
+No es lo mismo tener los datos en cualquier orden que tenerlos organizados por fecha.
+
+<br>
+
+La pregunta central de esta sección es:
+
+.center[
+## ¿el valor de hoy se relaciona con valores pasados?
+]
+
+<br>
+
+En finanzas esto es importante porque nos ayuda a entender si hay memoria en los retornos.
+
+---
+
+# La idea de rezago
+
+Un rezago es simplemente mirar la misma variable, pero desplazada hacia atrás en el tiempo.
+
+<br>
+
+.pull-left[
+### Hoy
+
+Retorno de hoy:
+
+.center[
+`r_t`
+]
+]
+
+.pull-right[
+### Ayer
+
+Retorno de ayer:
+
+.center[
+`r_{t-1}`
+]
+]
+
+<br>
+
+Si `r_t` se parece mucho a `r_{t-1}`, podría existir dependencia temporal.
+
+---
+
+# Rezagos en palabras sencillas
+
+Supongamos que TSLA subió ayer.
+
+La pregunta es:
+
+.center[
+## ¿eso ayuda a explicar si TSLA sube o baja hoy?
+]
+
+<br>
+
+Si la respuesta fuera sí, habría una relación entre el retorno actual y su pasado.
+
+Si la respuesta fuera no, el retorno de ayer no diría mucho sobre el retorno de hoy.
+
+---
+
+# Código para crear rezagos
+
+Creamos varios rezagos del retorno diario de TSLA.
+
+```{r codigo-rezagos-tsla, eval=FALSE, echo=TRUE}
+rezagos_tsla <- retornos_tsla %>%
+  arrange(fecha) %>%
+  mutate(
+    retorno_t = retorno_log,
+    retorno_t_1 = lag(retorno_log, 1),
+    retorno_t_2 = lag(retorno_log, 2),
+    retorno_t_3 = lag(retorno_log, 3)
+  ) %>%
+  drop_na()
+
+rezagos_tsla %>%
+  select(fecha, retorno_t, retorno_t_1, retorno_t_2, retorno_t_3) %>%
+  slice_head(n = 10)
+```
+
+---
+
+# Tabla con rezagos
+
+```{r tabla-rezagos-tsla, echo=FALSE}
+rezagos_tsla <- retornos_tsla %>%
+  arrange(fecha) %>%
+  mutate(
+    retorno_t = retorno_log,
+    retorno_t_1 = lag(retorno_log, 1),
+    retorno_t_2 = lag(retorno_log, 2),
+    retorno_t_3 = lag(retorno_log, 3)
+  ) %>%
+  drop_na()
+
+rezagos_tsla %>%
+  select(fecha, retorno_t, retorno_t_1, retorno_t_2, retorno_t_3) %>%
+  slice_head(n = 10) %>%
+  mutate(
+    across(
+      .cols = starts_with("retorno"),
+      .fns = ~ percent(.x, accuracy = 0.01)
+    )
+  ) %>%
+  knitr::kable(
+    col.names = c("Fecha", "Retorno hoy", "Rezago 1", "Rezago 2", "Rezago 3")
+  )
+```
+
+---
+
+# ¿Cómo leer la tabla?
+
+Cada fila compara el retorno de una fecha con sus valores pasados.
+
+<br>
+
+.pull-left[
+### Retorno hoy
+
+Es el retorno observado en la fecha actual.
+]
+
+.pull-right[
+### Rezago 1
+
+Es el retorno observado el día anterior.
+]
+
+.pull-left[
+### Rezago 2
+
+Es el retorno observado dos días antes.
+]
+
+.pull-right[
+### Rezago 3
+
+Es el retorno observado tres días antes.
+]
+
+---
+
+# Código para comparar retorno actual y rezago 1
+
+Una forma visual de revisar memoria es comparar el retorno de hoy contra el retorno de ayer.
+
+```{r codigo-dispersion-rezago1, eval=FALSE, echo=TRUE}
+ggplot(rezagos_tsla, aes(x = retorno_t_1, y = retorno_t)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_x_continuous(labels = percent_format(accuracy = 1)) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retorno actual vs. retorno rezagado",
+    subtitle = "TSLA: retorno de hoy frente al retorno de ayer",
+    x = "Retorno de ayer",
+    y = "Retorno de hoy"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Retorno actual vs. retorno rezagado
+
+```{r dispersion-rezago1, echo=FALSE, fig.height=3.5}
+ggplot(rezagos_tsla, aes(x = retorno_t_1, y = retorno_t)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_x_continuous(labels = percent_format(accuracy = 1)) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retorno actual vs. retorno rezagado",
+    subtitle = "TSLA: retorno de hoy frente al retorno de ayer",
+    x = "Retorno de ayer",
+    y = "Retorno de hoy"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura del gráfico
+
+Si hubiera una relación fuerte, los puntos formarían un patrón claro.
+
+Por ejemplo, una nube inclinada hacia arriba o hacia abajo.
+
+<br>
+
+Pero en retornos financieros diarios suele pasar algo distinto:
+
+.center[
+## la nube se ve bastante dispersa.
+]
+
+<br>
+
+Eso indica que el retorno de ayer no siempre explica bien el retorno de hoy.
+
+---
+
+# Código para calcular correlaciones con rezagos
+
+Ahora calculamos la correlación entre el retorno actual y varios rezagos.
+
+```{r codigo-correlaciones-rezagos, eval=FALSE, echo=TRUE}
+correlaciones_rezagos <- rezagos_tsla %>%
+  summarise(
+    cor_lag_1 = cor(retorno_t, retorno_t_1, use = "complete.obs"),
+    cor_lag_2 = cor(retorno_t, retorno_t_2, use = "complete.obs"),
+    cor_lag_3 = cor(retorno_t, retorno_t_3, use = "complete.obs")
+  )
+
+correlaciones_rezagos
+```
+
+---
+
+# Correlaciones con rezagos
+
+```{r tabla-correlaciones-rezagos, echo=FALSE}
+rezagos_tsla %>%
+  summarise(
+    cor_lag_1 = cor(retorno_t, retorno_t_1, use = "complete.obs"),
+    cor_lag_2 = cor(retorno_t, retorno_t_2, use = "complete.obs"),
+    cor_lag_3 = cor(retorno_t, retorno_t_3, use = "complete.obs")
+  ) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "rezago",
+    values_to = "correlacion"
+  ) %>%
+  mutate(
+    correlacion = round(correlacion, 4)
+  ) %>%
+  knitr::kable(
+    col.names = c("Rezago", "Correlación")
+  )
+```
+
+---
+
+# ¿Qué nos dicen estas correlaciones?
+
+Una correlación cercana a cero sugiere poca relación lineal entre el retorno actual y ese rezago.
+
+<br>
+
+.center[
+## En retornos financieros diarios, la autocorrelación suele ser baja.
+]
+
+<br>
+
+Pero eso no significa que no haya riesgo.
+
+Muchas veces la memoria aparece más en la volatilidad que en el retorno promedio.
+
+---
+
+# Autocorrelación
+
+La autocorrelación mide la relación de una serie consigo misma en distintos rezagos.
+
+<br>
+
+.center[
+## Correlación entre `r_t` y `r_{t-k}`
+]
+
+<br>
+
+Donde `k` representa el número de rezagos.
+
+Por ejemplo:
+
+- `k = 1`: relación entre hoy y ayer.
+- `k = 5`: relación entre hoy y hace cinco días.
+- `k = 20`: relación entre hoy y hace veinte días.
+
+---
+
+# ACF
+
+La ACF significa:
+
+.center[
+## Autocorrelation Function
+]
+
+<br>
+
+En español: función de autocorrelación.
+
+<br>
+
+La ACF nos muestra cómo se relaciona la serie actual con sus rezagos.
+
+Es una forma rápida de ver si la serie tiene memoria.
+
+---
+
+# Código para graficar ACF del precio
+
+Primero miramos la ACF del precio de TSLA.
+
+```{r codigo-acf-precio-tsla, eval=FALSE, echo=TRUE}
+forecast::ggAcf(
+  precios_tsla$precio,
+  lag.max = 30
+) +
+  labs(
+    title = "ACF del precio de TSLA",
+    subtitle = "Autocorrelación de la serie en niveles",
+    x = "Rezagos",
+    y = "Autocorrelación"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# ACF del precio de TSLA
+
+```{r acf-precio-tsla, echo=FALSE, fig.height=3.5}
+forecast::ggAcf(
+  precios_tsla$precio,
+  lag.max = 30
+) +
+  labs(
+    title = "ACF del precio de TSLA",
+    subtitle = "Autocorrelación de la serie en niveles",
+    x = "Rezagos",
+    y = "Autocorrelación"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura de la ACF del precio
+
+La ACF del precio suele caer lentamente.
+
+Eso ocurre porque los precios financieros tienen mucha persistencia.
+
+<br>
+
+.center[
+## El precio de hoy suele parecerse mucho al precio de ayer.
+]
+
+<br>
+
+Pero esto no significa necesariamente que el precio sea fácil de predecir.
+
+También puede ser una señal de no estacionariedad.
+
+---
+
+# Código para graficar ACF del retorno
+
+Ahora miramos la ACF de los retornos diarios.
+
+```{r codigo-acf-retorno-tsla, eval=FALSE, echo=TRUE}
+forecast::ggAcf(
+  retornos_tsla$retorno_log,
+  lag.max = 30
+) +
+  labs(
+    title = "ACF de los retornos de TSLA",
+    subtitle = "Autocorrelación de retornos logarítmicos diarios",
+    x = "Rezagos",
+    y = "Autocorrelación"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# ACF de los retornos de TSLA
+
+```{r acf-retorno-tsla, echo=FALSE, fig.height=3.5}
+forecast::ggAcf(
+  retornos_tsla$retorno_log,
+  lag.max = 30
+) +
+  labs(
+    title = "ACF de los retornos de TSLA",
+    subtitle = "Autocorrelación de retornos logarítmicos diarios",
+    x = "Rezagos",
+    y = "Autocorrelación"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura de la ACF del retorno
+
+En retornos, la autocorrelación suele ser mucho más baja que en precios.
+
+<br>
+
+.pull-left[
+### Si las barras son pequeñas
+
+Hay poca evidencia de memoria lineal.
+]
+
+.pull-right[
+### Si alguna barra sobresale
+
+Puede existir dependencia en ese rezago.
+]
+
+<br>
+
+Las bandas azules sirven como referencia visual.
+
+Si una barra se sale de las bandas, ese rezago puede ser relevante.
+
+---
+
+# ¿Por qué comparar precio y retorno?
+
+Porque visualmente queda claro por qué transformamos la serie.
+
+<br>
+
+.pull-left[
+### Precio
+
+Alta persistencia.
+
+ACF cae lentamente.
+
+Puede reflejar no estacionariedad.
+]
+
+.pull-right[
+### Retorno
+
+Menor persistencia.
+
+ACF más cercana a cero.
+
+Más adecuado para modelos de riesgo.
+]
+
+---
+
+# Código para comparar ACF de varios activos
+
+Ahora calculamos la ACF visual de los retornos para todos los activos.
+
+Para eso usamos una función auxiliar.
+
+```{r codigo-funcion-acf-activos, eval=FALSE, echo=TRUE}
+graficar_acf <- function(nombre_activo) {
+  
+  datos <- retornos %>%
+    filter(activo == nombre_activo)
+  
+  forecast::ggAcf(
+    datos$retorno_log,
+    lag.max = 30
+  ) +
+    labs(
+      title = paste("ACF de retornos:", nombre_activo),
+      x = "Rezagos",
+      y = "Autocorrelación"
+    ) +
+    theme_minimal()
+}
+
+graficar_acf("SPY")
+```
+
+---
+
+# ACF de retornos: SPY
+
+```{r acf-spy, echo=FALSE, fig.height=3.5}
+graficar_acf <- function(nombre_activo) {
+  
+  datos <- retornos %>%
+    filter(activo == nombre_activo)
+  
+  forecast::ggAcf(
+    datos$retorno_log,
+    lag.max = 30
+  ) +
+    labs(
+      title = paste("ACF de retornos:", nombre_activo),
+      x = "Rezagos",
+      y = "Autocorrelación"
+    ) +
+    theme_minimal()
+}
+
+graficar_acf("SPY")
+```
+
+---
+
+# Código para mirar otro activo
+
+El estudiante puede cambiar el ticker y repetir el gráfico.
+
+```{r codigo-acf-activo-elegido, eval=FALSE, echo=TRUE}
+activo_elegido <- "TSLA"
+
+graficar_acf(activo_elegido)
+```
+
+---
+
+# ACF de retornos: TSLA
+
+```{r acf-tsla-seccion3, echo=FALSE, fig.height=3.5}
+graficar_acf("TSLA")
+```
+
+---
+
+# PACF
+
+La PACF significa:
+
+.center[
+## Partial Autocorrelation Function
+]
+
+<br>
+
+En español: función de autocorrelación parcial.
+
+<br>
+
+La PACF mide la relación entre la serie actual y un rezago específico, quitando el efecto de los rezagos intermedios.
+
+---
+
+# ACF vs. PACF
+
+.pull-left[
+### ACF
+
+Mira la relación total con cada rezago.
+
+Incluye efectos directos e indirectos.
+]
+
+.pull-right[
+### PACF
+
+Mira la relación parcial con cada rezago.
+
+Intenta aislar el efecto de un rezago específico.
+]
+
+<br>
+
+Ambas ayudan a pensar modelos AR, MA y ARIMA.
+
+---
+
+# Código para graficar PACF del retorno
+
+```{r codigo-pacf-retorno-tsla, eval=FALSE, echo=TRUE}
+forecast::ggPacf(
+  retornos_tsla$retorno_log,
+  lag.max = 30
+) +
+  labs(
+    title = "PACF de los retornos de TSLA",
+    subtitle = "Autocorrelación parcial de retornos logarítmicos diarios",
+    x = "Rezagos",
+    y = "Autocorrelación parcial"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# PACF de los retornos de TSLA
+
+```{r pacf-retorno-tsla, echo=FALSE, fig.height=3.5}
+forecast::ggPacf(
+  retornos_tsla$retorno_log,
+  lag.max = 30
+) +
+  labs(
+    title = "PACF de los retornos de TSLA",
+    subtitle = "Autocorrelación parcial de retornos logarítmicos diarios",
+    x = "Rezagos",
+    y = "Autocorrelación parcial"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura de la PACF
+
+La PACF ayuda a detectar si algunos rezagos tienen relación directa con el retorno actual.
+
+<br>
+
+.center[
+## Si casi todo está dentro de las bandas, la memoria lineal es baja.
+]
+
+<br>
+
+Eso suele pasar en retornos diarios.
+
+Pero, de nuevo, la historia no termina ahí.
+
+---
+
+
+
+class: inverse, center, middle
+
+# Sección 4
+
+## ARIMA para pronóstico
+
+---
+
+# ¿Por qué ARIMA?
+
+ARIMA es uno de los modelos clásicos para trabajar con series de tiempo.
+
+Su objetivo principal es modelar una serie usando su propia historia.
+
+<br>
+
+.center[
+## La idea básica es mirar si el pasado ayuda a explicar el presente.
+]
+
+<br>
+
+En finanzas, ARIMA puede usarse como punto de partida para entender dinámica temporal, aunque no siempre sea suficiente para riesgo.
+
+---
+
+# ¿Qué significa ARIMA?
+
+ARIMA viene de tres partes:
+
+<br>
+
+.pull-left[
+### AR
+
+Componente autorregresivo.
+
+Usa valores pasados de la serie.
+]
+
+.pull-right[
+### I
+
+Componente integrado.
+
+Indica cuántas diferencias se aplican para volver la serie más estable.
+]
+
+.pull-left[
+### MA
+
+Media móvil.
+
+Usa errores pasados del modelo.
+]
+
+.pull-right[
+### ARIMA(p, d, q)
+
+Resume esas tres partes en una sola notación.
+]
+
+---
+
+# ARIMA(p, d, q)
+
+La notación ARIMA tiene tres números.
+
+<br>
+
+.center[
+## ARIMA(p, d, q)
+]
+
+<br>
+
+.pull-left[
+### p
+
+Número de rezagos autorregresivos.
+]
+
+.pull-right[
+### d
+
+Número de diferenciaciones.
+]
+
+.pull-left[
+### q
+
+Número de rezagos del error.
+]
+
+.pull-right[
+### Ejemplo
+
+ARIMA(1, 1, 1)
+]
+
+---
+
+# Una intuición sencilla
+
+ARIMA intenta responder preguntas como estas:
+
+<br>
+
+.pull-left[
+### AR
+
+¿El valor actual depende de valores pasados?
+]
+
+.pull-right[
+### I
+
+¿Necesito transformar la serie para quitar tendencia?
+]
+
+.pull-left[
+### MA
+
+¿Los errores pasados todavía contienen información?
+]
+
+.pull-right[
+### Pronóstico
+
+¿Puedo proyectar la serie algunos pasos adelante?
+]
+
+---
+
+# ¿Sobre qué serie vamos a trabajar?
+
+Para explicar ARIMA, vamos a trabajar con el log-precio de TSLA.
+
+<br>
+
+Esto nos permite conectar con la sección anterior:
+
+.center[
+## precio → log-precio → diferenciación
+]
+
+<br>
+
+ARIMA puede diferenciar internamente la serie si detecta que lo necesita.
+
+---
+
+# Construimos el log-precio
+
+Este bloque crea una serie con el precio ajustado y su logaritmo.
+
+```{r codigo-log-precio-arima, eval=FALSE, echo=TRUE}
+serie_tsla_arima <- precios_tsla %>%
+  arrange(fecha) %>%
+  mutate(
+    log_precio = log(precio)
+  )
+
+serie_tsla_arima %>%
+  select(fecha, precio, log_precio) %>%
+  slice_head(n = 10)
+```
+
+---
+
+# Tabla del log-precio
+
+```{r tabla-log-precio-arima, echo=FALSE}
+serie_tsla_arima <- precios_tsla %>%
+  arrange(fecha) %>%
+  mutate(
+    log_precio = log(precio)
+  )
+
+serie_tsla_arima %>%
+  select(fecha, precio, log_precio) %>%
+  slice_head(n = 10) %>%
+  mutate(
+    precio = round(precio, 2),
+    log_precio = round(log_precio, 4)
+  ) %>%
+  knitr::kable(
+    col.names = c("Fecha", "Precio ajustado", "Log-precio")
+  )
+```
+
+---
+
+# Código para graficar el log-precio
+
+```{r codigo-grafico-log-precio-arima, eval=FALSE, echo=TRUE}
+ggplot(serie_tsla_arima, aes(x = fecha, y = log_precio)) +
+  geom_line(linewidth = 0.7) +
+  labs(
+    title = "Log-precio de TSLA",
+    subtitle = "Serie sobre la cual aplicaremos ARIMA",
+    x = NULL,
+    y = "Log-precio"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Log-precio de TSLA
+
+```{r grafico-log-precio-arima, echo=FALSE, fig.height=3.5}
+ggplot(serie_tsla_arima, aes(x = fecha, y = log_precio)) +
+  geom_line(linewidth = 0.7) +
+  labs(
+    title = "Log-precio de TSLA",
+    subtitle = "Serie sobre la cual aplicaremos ARIMA",
+    x = NULL,
+    y = "Log-precio"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura del log-precio
+
+El log-precio todavía conserva la trayectoria acumulada del activo.
+
+<br>
+
+.center[
+## No parece moverse alrededor de un nivel fijo.
+]
+
+<br>
+
+Por eso, ARIMA probablemente necesitará una diferencia.
+
+Esa diferencia está representada por el parámetro `d`.
+
+---
+
+# Diferenciación dentro de ARIMA
+
+Cuando ARIMA usa `d = 1`, está trabajando con la primera diferencia de la serie.
+
+<br>
+
+En este caso:
+
+.center[
+## diferencia del log-precio = retorno logarítmico
+]
+
+<br>
+
+Por eso ARIMA sobre log-precios está muy conectado con los retornos.
+
+---
+
+# Código para diferenciar el log-precio
+
+```{r codigo-diferencia-log-arima, eval=FALSE, echo=TRUE}
+serie_tsla_arima <- serie_tsla_arima %>%
+  mutate(
+    dif_log_precio = log_precio - lag(log_precio)
+  ) %>%
+  drop_na()
+
+serie_tsla_arima %>%
+  select(fecha, log_precio, dif_log_precio) %>%
+  slice_head(n = 10)
+```
+
+---
+
+# Tabla de la diferencia del log-precio
+
+```{r tabla-diferencia-log-arima, echo=FALSE}
+serie_tsla_arima <- precios_tsla %>%
+  arrange(fecha) %>%
+  mutate(
+    log_precio = log(precio),
+    dif_log_precio = log_precio - lag(log_precio)
+  ) %>%
+  drop_na()
+
+serie_tsla_arima %>%
+  select(fecha, log_precio, dif_log_precio) %>%
+  slice_head(n = 10) %>%
+  mutate(
+    log_precio = round(log_precio, 4),
+    dif_log_precio = percent(dif_log_precio, accuracy = 0.01)
+  ) %>%
+  knitr::kable(
+    col.names = c("Fecha", "Log-precio", "Diferencia del log-precio")
+  )
+```
+
+---
+
+# Código para graficar la diferencia
+
+```{r codigo-grafico-diferencia-log-arima, eval=FALSE, echo=TRUE}
+ggplot(serie_tsla_arima, aes(x = fecha, y = dif_log_precio)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.5) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Diferencia del log-precio de TSLA",
+    subtitle = "Equivale al retorno logarítmico diario",
+    x = NULL,
+    y = "Diferencia del log-precio"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Diferencia del log-precio
+
+```{r grafico-diferencia-log-arima, echo=FALSE, fig.height=3.5}
+ggplot(serie_tsla_arima, aes(x = fecha, y = dif_log_precio)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.5) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Diferencia del log-precio de TSLA",
+    subtitle = "Equivale al retorno logarítmico diario",
+    x = NULL,
+    y = "Diferencia del log-precio"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura de la diferencia
+
+Después de diferenciar, la serie se parece mucho más a una serie de retornos.
+
+<br>
+
+.center[
+## Ya no estamos modelando el nivel del precio.
+]
+
+.center[
+## Estamos modelando sus cambios.
+]
+
+<br>
+
+Ese es el puente entre ARIMA y los modelos de riesgo.
+
+---
+
+# Ajuste automático de ARIMA
+
+La función `auto.arima()` busca una combinación razonable de `p`, `d` y `q`.
+
+<br>
+
+No significa que el modelo sea perfecto.
+
+Significa que R prueba varias opciones y escoge una usando criterios estadísticos como AIC o BIC.
+
+---
+
+# Código para ajustar ARIMA
+
+Ajustamos el modelo sobre el log-precio.
+
+```{r codigo-ajuste-arima, eval=FALSE, echo=TRUE}
+modelo_arima_auto <- forecast::auto.arima(
+  serie_tsla_arima$log_precio,
+  seasonal = FALSE
+)
+
+modelo_arima_auto
+```
+
+---
+
+# Modelo ARIMA seleccionado
+
+```{r modelo-arima-seleccionado, echo=FALSE}
+modelo_arima_auto <- forecast::auto.arima(
+  serie_tsla_arima$log_precio,
+  seasonal = FALSE
+)
+
+modelo_arima_auto
+```
+
+
+
+---
+
+# ¿Cómo leer este ARIMA?
+
+El modelo seleccionado fue:
+
+.center[
+## ARIMA(0, 1, 0) with drift
+]
+
+<br>
+
+Esto significa:
+
+.pull-left[
+### p = 0
+
+El modelo no usa rezagos autorregresivos.
+
+Es decir, no encontró una relación fuerte entre el valor actual y valores pasados adicionales.
+]
+
+.pull-right[
+### d = 1
+
+El modelo sí diferencia la serie una vez.
+
+Esto confirma que el log-precio necesitaba transformarse para trabajar con sus cambios.
+]
+
+<br>
+
+.center[
+### q = 0
+
+El modelo tampoco usa errores rezagados.
+]
+
+---
+
+# ¿Qué significa el drift?
+
+El término `drift` representa una tendencia promedio en la serie diferenciada.
+
+<br>
+
+En este caso, el modelo encontró un drift aproximado de:
+
+.center[
+## 0.0016
+]
+
+<br>
+
+Eso quiere decir que, después de diferenciar el log-precio, el cambio promedio diario estimado es positivo.
+
+.pull-left[
+### Lectura técnica
+
+El modelo se parece a un camino aleatorio con deriva.
+
+El precio no se predice con rezagos, sino con una tendencia promedio pequeña.
+]
+
+.pull-right[
+### Lectura financiera
+
+Para TSLA, el modelo no detecta mucha memoria en el precio.
+
+El pronóstico se mueve principalmente por la deriva y por la incertidumbre acumulada.
+]
+
+
+
+
+---
+
+# ¿Cómo leer el modelo seleccionado?
+
+El resultado muestra algo como:
+
+.center[
+## ARIMA(p, d, q)
+]
+
+<br>
+
+.pull-left[
+### Si `d = 1`
+
+El modelo decidió diferenciar una vez.
+
+Eso suele pasar con precios o log-precios.
+]
+
+.pull-right[
+### Si `p` o `q` son positivos
+
+El modelo encontró alguna estructura en rezagos o errores pasados.
+]
+
+<br>
+
+Lo importante es interpretar el modelo como una herramienta, no como una verdad automática.
+
+---
+
+# Ajuste manual de un ARIMA sencillo
+
+También podemos ajustar un modelo manualmente.
+
+Por ejemplo, un ARIMA(1,1,1).
+
+```{r codigo-arima-manual, eval=FALSE, echo=TRUE}
+modelo_arima_111 <- forecast::Arima(
+  serie_tsla_arima$log_precio,
+  order = c(1, 1, 1)
+)
+
+modelo_arima_111
+```
+
+---
+
+# Modelo ARIMA(1,1,1)
+
+```{r modelo-arima-manual, echo=FALSE}
+modelo_arima_111 <- forecast::Arima(
+  serie_tsla_arima$log_precio,
+  order = c(1, 1, 1)
+)
+
+modelo_arima_111
+```
+
+---
+
+# ¿Por qué ajustar uno manual?
+
+Porque `auto.arima()` ayuda, pero no reemplaza el criterio del analista.
+
+<br>
+
+.pull-left[
+### Modelo automático
+
+R busca una especificación conveniente.
+]
+
+.pull-right[
+### Modelo manual
+
+El analista propone una estructura y la evalúa.
+]
+
+<br>
+
+En la práctica, conviene comparar modelos y revisar residuos.
+
+
+
+---
+
+# ¿Cómo se escoge el orden de un ARIMA?
+
+
+.center[
+## ARIMA(p, d, q)
+]
+
+
+.pull-left[
+### p
+
+Número de rezagos autorregresivos.
+
+Se relaciona con la PACF.
+]
+
+.pull-right[
+### d
+
+Número de diferencias necesarias.
+
+Se relaciona con la estacionariedad.
+]
+
+.pull-left[
+### q
+
+Número de errores rezagados.
+
+Se relaciona con la ACF.
+]
+
+.pull-right[
+### Modelo final
+
+Se escoge combinando criterio visual, pruebas y comparación estadística.
+]
+
+---
+
+# Paso 1: escoger d
+
+El primer paso es revisar si la serie necesita diferenciación.
+
+<br>
+
+.center[
+## d responde: ¿cuántas veces debo diferenciar la serie?
+]
+
+<br>
+
+En precios financieros, normalmente el precio no es estacionario.
+
+Por eso, muchas veces el modelo necesita `d = 1`.
+
+---
+
+# Código para revisar estacionariedad
+
+```{r codigo-revisar-d-arima, eval=FALSE, echo=TRUE}
+adf_precio <- tseries::adf.test(serie_tsla_arima$log_precio)
+
+adf_precio
+```
+
+---
+
+# Resultado ADF del log-precio
+
+```{r resultado-revisar-d-arima, echo=FALSE}
+adf_precio <- tseries::adf.test(serie_tsla_arima$log_precio)
+
+tibble(
+  serie = "Log-precio de TSLA",
+  estadistico_adf = as.numeric(adf_precio$statistic),
+  p_valor = adf_precio$p.value
+) %>%
+  mutate(
+    estadistico_adf = round(estadistico_adf, 3),
+    p_valor = round(p_valor, 4),
+    lectura = if_else(
+      p_valor < 0.05,
+      "Podría trabajarse sin diferenciar",
+      "Conviene diferenciar la serie"
+    )
+  ) %>%
+  knitr::kable(
+    col.names = c("Serie", "Estadístico ADF", "p-valor", "Lectura")
+  )
+```
+
+---
+
+# Probamos una diferencia
+
+Si el log-precio no parece estacionario, tomamos la primera diferencia.
+
+```{r codigo-probar-diferencia-arima, eval=FALSE, echo=TRUE}
+serie_tsla_arima <- serie_tsla_arima %>%
+  mutate(
+    dif_log_precio = log_precio - lag(log_precio)
+  ) %>%
+  drop_na()
+
+adf_diferencia <- tseries::adf.test(serie_tsla_arima$dif_log_precio)
+
+adf_diferencia
+```
+
+---
+
+# Resultado ADF de la diferencia
+
+```{r resultado-probar-diferencia-arima, echo=FALSE}
+adf_diferencia <- tseries::adf.test(serie_tsla_arima$dif_log_precio)
+
+tibble(
+  serie = "Primera diferencia del log-precio",
+  estadistico_adf = as.numeric(adf_diferencia$statistic),
+  p_valor = adf_diferencia$p.value
+) %>%
+  mutate(
+    estadistico_adf = round(estadistico_adf, 3),
+    p_valor = round(p_valor, 4),
+    lectura = if_else(
+      p_valor < 0.05,
+      "La primera diferencia parece suficiente",
+      "Podría necesitar más transformación"
+    )
+  ) %>%
+  knitr::kable(
+    col.names = c("Serie", "Estadístico ADF", "p-valor", "Lectura")
+  )
+```
+
+---
+
+# Lectura para d
+
+Si el log-precio no es estacionario, pero su primera diferencia sí lo es, entonces usamos:
+
+.center[
+## d = 1
+]
+
+<br>
+
+En nuestro caso, esa primera diferencia del log-precio es el retorno logarítmico.
+
+Por eso, para precios financieros es común encontrar modelos ARIMA con `d = 1`.
+
+---
+
+# Paso 2: escoger p con la PACF
+
+Después de definir `d`, miramos la serie diferenciada.
+
+<br>
+
+La PACF ayuda a sugerir el componente autorregresivo.
+
+.center[
+## p se mira principalmente con la PACF
+]
+
+<br>
+
+Si la PACF muestra un pico importante en el rezago 1, puede sugerir `p = 1`.
+
+Si muestra picos hasta el rezago 2, puede sugerir `p = 2`.
+
+---
+
+# Código para mirar PACF
+
+```{r codigo-pacf-orden-p, eval=FALSE, echo=TRUE}
+forecast::ggPacf(
+  serie_tsla_arima$dif_log_precio,
+  lag.max = 30
+) +
+  labs(
+    title = "PACF de la serie diferenciada",
+    subtitle = "Ayuda visual para sugerir el orden p",
+    x = "Rezagos",
+    y = "Autocorrelación parcial"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# PACF para sugerir p
+
+```{r pacf-orden-p, echo=FALSE, fig.height=3.5}
+forecast::ggPacf(
+  serie_tsla_arima$dif_log_precio,
+  lag.max = 30
+) +
+  labs(
+    title = "PACF de la serie diferenciada",
+    subtitle = "Ayuda visual para sugerir el orden p",
+    x = "Rezagos",
+    y = "Autocorrelación parcial"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# ¿Cómo leer p?
+
+La lectura no es mecánica, pero ayuda.
+
+<br>
+
+.pull-left[
+### PACF con pico en rezago 1
+
+Puede sugerir `p = 1`.
+]
+
+.pull-right[
+### PACF con pico en rezagos 1 y 2
+
+Puede sugerir `p = 2`.
+]
+
+.pull-left[
+### PACF sin picos claros
+
+Puede sugerir `p = 0`.
+]
+
+.pull-right[
+### Muchos picos dispersos
+
+Cuidado: puede ser ruido o una serie difícil de modelar.
+]
+
+---
+
+# Paso 3: escoger q con la ACF
+
+La ACF ayuda a sugerir el componente de media móvil.
+
+.center[
+## q se mira principalmente con la ACF
+]
+
+<br>
+
+Si la ACF muestra un pico importante en el rezago 1, puede sugerir `q = 1`.
+
+Si muestra picos hasta el rezago 2, puede sugerir `q = 2`.
+
+---
+
+# Código para mirar ACF
+
+```{r codigo-acf-orden-q, eval=FALSE, echo=TRUE}
+forecast::ggAcf(
+  serie_tsla_arima$dif_log_precio,
+  lag.max = 30
+) +
+  labs(
+    title = "ACF de la serie diferenciada",
+    subtitle = "Ayuda visual para sugerir el orden q",
+    x = "Rezagos",
+    y = "Autocorrelación"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# ACF para sugerir q
+
+```{r acf-orden-q, echo=FALSE, fig.height=3.5}
+forecast::ggAcf(
+  serie_tsla_arima$dif_log_precio,
+  lag.max = 30
+) +
+  labs(
+    title = "ACF de la serie diferenciada",
+    subtitle = "Ayuda visual para sugerir el orden q",
+    x = "Rezagos",
+    y = "Autocorrelación"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# ¿Cómo leer q?
+
+.pull-left[
+### ACF con pico en rezago 1
+
+Puede sugerir `q = 1`.
+]
+
+.pull-right[
+### ACF con pico en rezagos 1 y 2
+
+Puede sugerir `q = 2`.
+]
+
+.pull-left[
+### ACF sin picos claros
+
+Puede sugerir `q = 0`.
+]
+
+.pull-right[
+### ACF que cae lentamente
+
+Puede indicar que faltó diferenciar o transformar.
+]
+
+---
+
+# Regla práctica para esta clase
+
+No vamos a buscar modelos muy grandes.
+
+Para una primera aplicación, probaremos modelos pequeños:
+
+<br>
+
+.center[
+## p = 0, 1, 2
+]
+
+.center[
+## d = 1
+]
+
+.center[
+## q = 0, 1, 2
+]
+
+<br>
+
+Luego comparamos con AIC y BIC.
+
+---
+
+# Código para probar varios modelos
+
+```{r codigo-probar-modelos-arima, eval=FALSE, echo=TRUE}
+modelos_candidatos <- crossing(
+  p = 0:2,
+  d = 1,
+  q = 0:2
+) %>%
+  mutate(
+    modelo = pmap(
+      list(p, d, q),
+      ~ forecast::Arima(
+        serie_tsla_arima$log_precio,
+        order = c(..1, ..2, ..3)
+      )
+    ),
+    AIC = map_dbl(modelo, AIC),
+    BIC = map_dbl(modelo, BIC)
+  ) %>%
+  arrange(AIC)
+
+modelos_candidatos
+```
+
+---
+
+# Tabla de modelos candidatos
+
+```{r tabla-probar-modelos-arima, echo=FALSE}
+modelos_candidatos <- crossing(
+  p = 0:2,
+  d = 1,
+  q = 0:2
+) %>%
+  mutate(
+    modelo = pmap(
+      list(p, d, q),
+      ~ forecast::Arima(
+        serie_tsla_arima$log_precio,
+        order = c(..1, ..2, ..3)
+      )
+    ),
+    AIC = map_dbl(modelo, AIC),
+    BIC = map_dbl(modelo, BIC),
+    especificacion = paste0("ARIMA(", p, ",", d, ",", q, ")")
+  ) %>%
+  arrange(AIC)
+
+modelos_candidatos %>%
+  select(especificacion, AIC, BIC) %>%
+  mutate(
+    AIC = round(AIC, 2),
+    BIC = round(BIC, 2)
+  ) %>%
+  knitr::kable(
+    col.names = c("Modelo", "AIC", "BIC")
+  )
+```
+
+---
+
+# ¿Cómo escoger entre modelos?
+
+No escogemos solo por intuición visual.
+
+Combinamos tres criterios:
+
+<br>
+
+.pull-left[
+### 1. Estacionariedad
+
+Define el valor de `d`.
+]
+
+.pull-right[
+### 2. ACF/PACF
+
+Sugiere valores razonables de `p` y `q`.
+]
+
+.pull-left[
+### 3. AIC/BIC
+
+Compara modelos candidatos.
+]
+
+.pull-right[
+### 4. Simplicidad
+
+Si dos modelos son parecidos, preferimos el más simple.
+]
+
+---
+
+# Modelo elegido
+
+Podemos tomar el modelo con menor AIC.
+
+```{r codigo-modelo-elegido-arima, eval=FALSE, echo=TRUE}
+mejor_modelo_manual <- modelos_candidatos %>%
+  slice_min(AIC, n = 1)
+
+mejor_modelo_manual %>%
+  select(especificacion, AIC, BIC)
+```
+
+---
+
+# Mejor modelo candidato
+
+```{r tabla-modelo-elegido-arima, echo=FALSE}
+modelos_candidatos %>%
+  slice_min(AIC, n = 1) %>%
+  select(especificacion, AIC, BIC) %>%
+  mutate(
+    AIC = round(AIC, 2),
+    BIC = round(BIC, 2)
+  ) %>%
+  knitr::kable(
+    col.names = c("Modelo elegido", "AIC", "BIC")
+  )
+```
+
+---
+
+# ¿Y entonces para qué sirve auto.arima?
+
+`auto.arima()` automatiza esta búsqueda.
+
+<br>
+
+Pero ahora ya sabemos qué está haciendo por debajo:
+
+- revisa diferenciación,
+- prueba combinaciones de `p` y `q`,
+- compara modelos,
+- escoge una especificación conveniente.
+
+<br>
+
+.center[
+## auto.arima no reemplaza el criterio, lo acompaña.
+]
+
+
+
+---
+
+
+
+# Comparación por AIC
+
+El AIC ayuda a comparar modelos.
+
+En general, menor AIC indica mejor balance entre ajuste y complejidad.
+
+```{r codigo-comparar-aic-arima, eval=FALSE, echo=TRUE}
+comparacion_arima <- tibble(
+  modelo = c("auto.arima", "ARIMA(1,1,1)"),
+  AIC = c(
+    AIC(modelo_arima_auto),
+    AIC(modelo_arima_111)
+  ),
+  BIC = c(
+    BIC(modelo_arima_auto),
+    BIC(modelo_arima_111)
+  )
+)
+
+comparacion_arima
+```
+
+---
+
+# Comparación de modelos ARIMA
+
+```{r tabla-comparar-aic-arima, echo=FALSE}
+comparacion_arima <- tibble(
+  modelo = c("auto.arima", "ARIMA(1,1,1)"),
+  AIC = c(
+    AIC(modelo_arima_auto),
+    AIC(modelo_arima_111)
+  ),
+  BIC = c(
+    BIC(modelo_arima_auto),
+    BIC(modelo_arima_111)
+  )
+)
+
+comparacion_arima %>%
+  mutate(
+    AIC = round(AIC, 2),
+    BIC = round(BIC, 2)
+  ) %>%
+  knitr::kable(
+    col.names = c("Modelo", "AIC", "BIC")
+  )
+```
+
+---
+
+# Lectura del AIC y BIC
+
+El AIC y el BIC sirven para comparar modelos estimados sobre la misma serie.
+
+<br>
+
+.center[
+## Menor valor suele ser preferible.
+]
+
+<br>
+
+Pero un buen AIC no garantiza que el modelo sea adecuado para riesgo financiero.
+
+También hay que revisar residuos y comportamiento de la volatilidad.
+
+---
+
+# Pronóstico con ARIMA
+
+Una vez ajustado el modelo, podemos generar un pronóstico.
+
+<br>
+
+En este ejemplo proyectamos el log-precio algunos días hacia adelante.
+
+```{r codigo-pronostico-arima, eval=FALSE, echo=TRUE}
+pronostico_arima <- forecast::forecast(
+  modelo_arima_auto,
+  h = 20
+)
+
+pronostico_arima
+```
+
+---
+
+# Tabla del pronóstico
+
+```{r tabla-pronostico-arima, echo=FALSE}
+pronostico_arima <- forecast::forecast(
+  modelo_arima_auto,
+  h = 20
+)
+
+tibble(
+  horizonte = 1:20,
+  pronostico_log = as.numeric(pronostico_arima$mean),
+  limite_inferior_95 = as.numeric(pronostico_arima$lower[, 2]),
+  limite_superior_95 = as.numeric(pronostico_arima$upper[, 2])
+) %>%
+  slice_head(n = 10) %>%
+  mutate(
+    across(
+      .cols = c(pronostico_log, limite_inferior_95, limite_superior_95),
+      .fns = ~ round(.x, 4)
+    )
+  ) %>%
+  knitr::kable(
+    col.names = c("Horizonte", "Pronóstico log", "Límite inferior 95%", "Límite superior 95%")
+  )
+```
+
+---
+
+# Código para graficar el pronóstico
+
+```{r codigo-grafico-pronostico-arima, eval=FALSE, echo=TRUE}
+autoplot(pronostico_arima) +
+  labs(
+    title = "Pronóstico ARIMA del log-precio de TSLA",
+    subtitle = "Horizonte de 20 días",
+    x = "Tiempo",
+    y = "Log-precio"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Pronóstico ARIMA
+
+```{r grafico-pronostico-arima, echo=FALSE, fig.height=3.5}
+autoplot(pronostico_arima) +
+  labs(
+    title = "Pronóstico ARIMA del log-precio de TSLA",
+    subtitle = "Horizonte de 20 días",
+    x = "Tiempo",
+    y = "Log-precio"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# ¿Cómo leer el pronóstico?
+
+El pronóstico muestra una trayectoria esperada y bandas de incertidumbre.
+
+<br>
+
+.pull-left[
+### Línea central
+
+Es el valor esperado según el modelo.
+]
+
+.pull-right[
+### Bandas
+
+Representan incertidumbre.
+
+Entre más lejos el horizonte, mayor suele ser la incertidumbre.
+]
+
+<br>
+
+En finanzas, esta incertidumbre es tan importante como el pronóstico central.
+
+---
+
+# Convertir pronóstico a precio
+
+Como el modelo está en log-precio, podemos volver a la escala de precio usando exponencial.
+
+```{r codigo-pronostico-precio-arima, eval=FALSE, echo=TRUE}
+pronostico_precio <- tibble(
+  horizonte = 1:20,
+  precio_esperado = exp(as.numeric(pronostico_arima$mean)),
+  precio_inf_95 = exp(as.numeric(pronostico_arima$lower[, 2])),
+  precio_sup_95 = exp(as.numeric(pronostico_arima$upper[, 2]))
+)
+
+pronostico_precio
+```
+
+---
+
+# Pronóstico en escala de precio
+
+```{r tabla-pronostico-precio-arima, echo=FALSE}
+pronostico_precio <- tibble(
+  horizonte = 1:20,
+  precio_esperado = exp(as.numeric(pronostico_arima$mean)),
+  precio_inf_95 = exp(as.numeric(pronostico_arima$lower[, 2])),
+  precio_sup_95 = exp(as.numeric(pronostico_arima$upper[, 2]))
+)
+
+pronostico_precio %>%
+  slice_head(n = 10) %>%
+  mutate(
+    precio_esperado = dollar(precio_esperado, accuracy = 0.01),
+    precio_inf_95 = dollar(precio_inf_95, accuracy = 0.01),
+    precio_sup_95 = dollar(precio_sup_95, accuracy = 0.01)
+  ) %>%
+  knitr::kable(
+    col.names = c("Horizonte", "Precio esperado", "Límite inferior 95%", "Límite superior 95%")
+  )
+```
+
+---
+
+# Código para graficar pronóstico en precio
+
+```{r codigo-grafico-pronostico-precio, eval=FALSE, echo=TRUE}
+ggplot(pronostico_precio, aes(x = horizonte, y = precio_esperado)) +
+  geom_ribbon(
+    aes(ymin = precio_inf_95, ymax = precio_sup_95),
+    alpha = 0.2
+  ) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.8) +
+  scale_y_continuous(labels = dollar_format()) +
+  labs(
+    title = "Pronóstico ARIMA en escala de precio",
+    subtitle = "Conversión desde log-precio a precio",
+    x = "Días hacia adelante",
+    y = "Precio esperado"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Pronóstico en escala de precio
+
+```{r grafico-pronostico-precio, echo=FALSE, fig.height=3.5}
+ggplot(pronostico_precio, aes(x = horizonte, y = precio_esperado)) +
+  geom_ribbon(
+    aes(ymin = precio_inf_95, ymax = precio_sup_95),
+    alpha = 0.2
+  ) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 1.8) +
+  scale_y_continuous(labels = dollar_format()) +
+  labs(
+    title = "Pronóstico ARIMA en escala de precio",
+    subtitle = "Conversión desde log-precio a precio",
+    x = "Días hacia adelante",
+    y = "Precio esperado"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Diagnóstico del modelo
+
+Después de ajustar ARIMA, no basta con mirar el pronóstico.
+
+También debemos revisar los residuos.
+
+<br>
+
+.center[
+## Los residuos son lo que el modelo no pudo explicar.
+]
+
+<br>
+
+Si los residuos todavía tienen estructura, el modelo dejó información sin capturar.
+
+---
+
+# Código para extraer residuos
+
+```{r codigo-residuos-arima, eval=FALSE, echo=TRUE}
+residuos_arima <- tibble(
+  fecha = serie_tsla_arima$fecha,
+  residuo = as.numeric(residuals(modelo_arima_auto))
+)
+
+residuos_arima %>%
+  slice_head(n = 10)
+```
+
+---
+
+# Tabla de residuos
+
+```{r tabla-residuos-arima, echo=FALSE}
+residuos_arima <- tibble(
+  fecha = serie_tsla_arima$fecha,
+  residuo = as.numeric(residuals(modelo_arima_auto))
+)
+
+residuos_arima %>%
+  slice_head(n = 10) %>%
+  mutate(
+    residuo = round(residuo, 5)
+  ) %>%
+  knitr::kable(
+    col.names = c("Fecha", "Residuo")
+  )
+```
+
+---
+
+# Código para graficar residuos
+
+```{r codigo-grafico-residuos-arima, eval=FALSE, echo=TRUE}
+ggplot(residuos_arima, aes(x = fecha, y = residuo)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.5) +
+  labs(
+    title = "Residuos del modelo ARIMA",
+    subtitle = "Lo que el modelo no explicó",
+    x = NULL,
+    y = "Residuo"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Residuos del modelo ARIMA
+
+```{r grafico-residuos-arima, echo=FALSE, fig.height=3.5}
+ggplot(residuos_arima, aes(x = fecha, y = residuo)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.5) +
+  labs(
+    title = "Residuos del modelo ARIMA",
+    subtitle = "Lo que el modelo no explicó",
+    x = NULL,
+    y = "Residuo"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura de los residuos
+
+Idealmente, los residuos deberían verse como ruido.
+
+<br>
+
+.pull-left[
+### Buena señal
+
+No hay patrón claro.
+
+La media está cerca de cero.
+]
+
+.pull-right[
+### Señal de cuidado
+
+Aparecen grupos de residuos grandes.
+
+Hay episodios de alta volatilidad.
+]
+
+<br>
+
+En finanzas, esta segunda situación es muy común.
+
+---
+
+# ACF de los residuos
+
+Si el modelo capturó bien la dinámica en media, la ACF de los residuos debería mostrar poca autocorrelación.
+
+```{r codigo-acf-residuos-arima, eval=FALSE, echo=TRUE}
+forecast::ggAcf(
+  residuos_arima$residuo,
+  lag.max = 30
+) +
+  labs(
+    title = "ACF de los residuos ARIMA",
+    subtitle = "Revisión de memoria no capturada",
+    x = "Rezagos",
+    y = "Autocorrelación"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# ACF de los residuos ARIMA
+
+```{r acf-residuos-arima, echo=FALSE, fig.height=3.5}
+forecast::ggAcf(
+  residuos_arima$residuo,
+  lag.max = 30
+) +
+  labs(
+    title = "ACF de los residuos ARIMA",
+    subtitle = "Revisión de memoria no capturada",
+    x = "Rezagos",
+    y = "Autocorrelación"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura de la ACF de residuos
+
+Si casi todas las barras están dentro de las bandas, el modelo no dejó mucha memoria lineal en los residuos.
+
+<br>
+
+.center[
+## Eso sería bueno para la media.
+]
+
+<br>
+
+Pero todavía falta revisar algo más importante para riesgo:
+
+.center[
+## la volatilidad de los residuos.
+]
+
+---
+
+
+# Diagnóstico automático con checkresiduals
+
+La función `checkresiduals()` resume varios diagnósticos.
+
+```{r codigo-checkresiduals-arima, eval=FALSE, echo=TRUE}
+forecast::checkresiduals(modelo_arima_auto)
+```
+
+---
+
+# Diagnóstico de residuos
+
+```{r checkresiduals-arima, echo=FALSE, fig.height=3.5}
+forecast::checkresiduals(modelo_arima_auto)
+```
+
+---
+
+# ¿Qué revisamos en este diagnóstico?
+
+.pull-left[
+### Serie de residuos
+
+Queremos que no tenga patrones claros.
+]
+
+.pull-right[
+### ACF de residuos
+
+Queremos poca autocorrelación.
+]
+
+.pull-left[
+### Histograma
+
+Queremos revisar si hay colas o asimetrías.
+]
+
+.pull-right[
+### Prueba Ljung-Box
+
+Ayuda a evaluar autocorrelación remanente.
+]
+
+---
+
+# ARIMA no es el final
+
+ARIMA puede ser útil para entender la dinámica temporal.
+
+Pero en riesgo financiero hay una limitación importante.
+
+<br>
+
+.center[
+## El riesgo no depende solamente de la media.
+]
+
+<br>
+
+También depende de cómo cambia la volatilidad.
+
+Por eso, ARIMA es una pieza del camino, no el punto de llegada.
+
+---
+
+# Una lectura financiera del ARIMA
+
+Supongamos que ARIMA pronostica un retorno esperado cercano a cero.
+
+Eso no significa que el activo sea seguro.
+
+<br>
+
+.center[
+## Puede tener media cercana a cero y, aun así, tener mucho riesgo.
+]
+
+<br>
+
+La volatilidad puede ser alta aunque el promedio esperado sea pequeño.
+
+---
+
+# Código para comparar media y volatilidad de residuos
+
+```{r codigo-resumen-residuos-arima, eval=FALSE, echo=TRUE}
+resumen_residuos_arima <- residuos_arima %>%
+  summarise(
+    media_residuo = mean(residuo, na.rm = TRUE),
+    volatilidad_residuo = sd(residuo, na.rm = TRUE),
+    minimo_residuo = min(residuo, na.rm = TRUE),
+    maximo_residuo = max(residuo, na.rm = TRUE),
+    curtosis_residuo = moments::kurtosis(residuo, na.rm = TRUE)
+  )
+
+resumen_residuos_arima
+```
+
+---
+
+# Resumen de residuos
+
+```{r tabla-resumen-residuos-arima, echo=FALSE}
+residuos_arima %>%
+  summarise(
+    media_residuo = mean(residuo, na.rm = TRUE),
+    volatilidad_residuo = sd(residuo, na.rm = TRUE),
+    minimo_residuo = min(residuo, na.rm = TRUE),
+    maximo_residuo = max(residuo, na.rm = TRUE),
+    curtosis_residuo = moments::kurtosis(residuo, na.rm = TRUE)
+  ) %>%
+  mutate(
+    across(
+      .cols = everything(),
+      .fns = ~ round(.x, 5)
+    )
+  ) %>%
+  knitr::kable(
+    col.names = c(
+      "Media",
+      "Volatilidad",
+      "Mínimo",
+      "Máximo",
+      "Curtosis"
+    )
+  )
+```
+
+---
+
+# Lectura del resumen
+
+La media del residuo puede ser pequeña.
+
+Pero eso no elimina el riesgo.
+
+<br>
+
+.pull-left[
+### Media pequeña
+
+El modelo no está sesgado en promedio.
+]
+
+.pull-right[
+### Volatilidad y colas
+
+Todavía puede haber movimientos grandes.
+
+Eso es lo que importa para riesgo.
+]
+
+---
+
+# Comparar ARIMA entre activos
+
+Podemos repetir el ajuste para varios activos.
+
+Esto permite ver si la dinámica temporal cambia entre instrumentos.
+
+```{r codigo-arima-varios-activos111, eval=FALSE, echo=TRUE}
+ajustar_arima_activo <- function(nombre_activo) {
+  
+  datos <- precios %>%
+    filter(activo == nombre_activo) %>%
+    arrange(fecha) %>%
+    mutate(log_precio = log(precio))
+  
+  modelo <- forecast::auto.arima(
+    datos$log_precio,
+    seasonal = FALSE
+  )
+  
+  tibble(
+    activo = nombre_activo,
+    modelo = as.character(modelo),
+    AIC = AIC(modelo),
+    BIC = BIC(modelo)
+  )
+}
+```
+
+---
+
+# Código para aplicar la función
+
+```{r codigo-tabla-arima-varios-activos, eval=FALSE, echo=TRUE}
+modelos_arima_activos <- purrr::map_dfr(
+  tickers,
+  ajustar_arima_activo
+)
+
+modelos_arima_activos
+```
+
+---
+
+# Modelos ARIMA por activo
+
+```{r codigo-arima-varios-activos, eval=FALSE, echo=TRUE}
+ajustar_arima_activo <- function(nombre_activo) {
+  
+  datos <- precios %>%
+    filter(activo == nombre_activo) %>%
+    arrange(fecha) %>%
+    mutate(log_precio = log(precio))
+  
+  modelo_arima <- forecast::auto.arima(
+    datos$log_precio,
+    seasonal = FALSE
+  )
+  
+  orden <- forecast::arimaorder(modelo_arima)
+  
+  nombre_modelo <- paste0(
+    "ARIMA(",
+    orden["p"], ",",
+    orden["d"], ",",
+    orden["q"], ")"
+  )
+  
+  if ("drift" %in% names(coef(modelo_arima))) {
+    nombre_modelo <- paste(nombre_modelo, "with drift")
+  }
+  
+  tibble(
+    activo = nombre_activo,
+    modelo = nombre_modelo,
+    AIC = AIC(modelo_arima),
+    BIC = BIC(modelo_arima)
+  )
+}
+```
+
+
+---
+
+# Modelos ARIMA por activo
+
+```{r tabla-arima-varios-activos, echo=FALSE}
+ajustar_arima_activo <- function(nombre_activo) {
+  
+  datos <- precios %>%
+    filter(activo == nombre_activo) %>%
+    arrange(fecha) %>%
+    mutate(log_precio = log(precio))
+  
+  modelo_arima <- forecast::auto.arima(
+    datos$log_precio,
+    seasonal = FALSE
+  )
+  
+  orden <- forecast::arimaorder(modelo_arima)
+  
+  nombre_modelo <- paste0(
+    "ARIMA(",
+    orden["p"], ",",
+    orden["d"], ",",
+    orden["q"], ")"
+  )
+  
+  if ("drift" %in% names(coef(modelo_arima))) {
+    nombre_modelo <- paste(nombre_modelo, "with drift")
+  }
+  
+  tibble(
+    activo = nombre_activo,
+    modelo = nombre_modelo,
+    AIC = AIC(modelo_arima),
+    BIC = BIC(modelo_arima)
+  )
+}
+
+modelos_arima_activos <- purrr::map_dfr(
+  tickers,
+  ajustar_arima_activo
+)
+
+modelos_arima_activos %>%
+  mutate(
+    AIC = round(AIC, 2),
+    BIC = round(BIC, 2)
+  ) %>%
+  knitr::kable(
+    col.names = c("Activo", "Modelo seleccionado", "AIC", "BIC")
+  )
+```
+
+---
+
+# Lectura comparativa
+
+Cada activo puede tener una especificación distinta.
+
+<br>
+
+Esto es normal.
+
+Un ETF amplio como SPY no necesariamente se comporta igual que una acción individual como TSLA.
+
+<br>
+
+.center[
+## La estructura temporal depende del activo y del periodo analizado.
+]
+
+---
+
+# Actividad en clase
+
+Cada grupo elige un activo de su gusto y realiza:
+
+1. construir el log-precio,
+2. ajustar `auto.arima()`, y otros modelos
+3. revisar el modelo seleccionado,
+4. generar pronóstico a 10 días,
+5. revisar residuos,
+6. concluir si ARIMA parece suficiente para capturar riesgo.
+
+---
+
+
+# Cierre de la sección
+
+ARIMA nos permite modelar la dinámica de una serie usando su propia historia.
+
+<br>
+
+.center[
+## Pero ARIMA se concentra principalmente en la media.
+]
+
+<br>
+
+En riesgo financiero, muchas veces el gran problema no está en pronosticar la media.
+
+El gran problema está en estimar la volatilidad.
+
+<br>
+
+.center[
+## Eso nos lleva a ARMA en retornos y luego a GARCH.
+]
+
+---
+
+
+
+class: inverse, center, middle
+
+# Sección 5
+
+## Retornos, ARMA y residuos
+
+---
+
+# ¿Por qué pasar de ARIMA a ARMA?
+
+En la sección anterior usamos ARIMA sobre el log-precio.
+
+Pero en riesgo financiero normalmente trabajamos con retornos.
+
+<br>
+
+Como los retornos ya son una diferencia del log-precio, muchas veces no necesitamos volver a diferenciar.
+
+.center[
+## Si la serie ya es estacionaria, podemos usar ARMA.
+]
+
+<br>
+
+ARMA es como ARIMA, pero con `d = 0`.
+
+---
+
+# ARIMA vs. ARMA
+
+.pull-left[
+### ARIMA
+
+Se usa cuando la serie puede necesitar diferenciación.
+
+Por ejemplo:
+
+- precios,
+- log-precios,
+- índices en niveles.
+]
+
+.pull-right[
+### ARMA
+
+Se usa cuando la serie ya está transformada.
+
+Por ejemplo:
+
+- retornos,
+- cambios porcentuales,
+- diferencias.
+]
+
+<br>
+
+.center[
+En esta sección trabajamos con retornos diarios.
+]
+
+---
+
+# La idea financiera
+
+ARMA intenta modelar la media condicional del retorno.
+
+Dicho de forma sencilla:
+
+.center[
+## ¿el retorno esperado de hoy depende de retornos pasados o errores pasados?
+]
+
+<br>
+
+Pero ojo:
+
+.center[
+## modelar la media no es lo mismo que modelar el riesgo.
+]
+
+<br>
+
+Por eso esta sección será un puente hacia GARCH.
+
+---
+
+# Recordemos la serie de trabajo
+
+Vamos a usar los retornos logarítmicos diarios de TSLA.
+
+```{r codigo-retornos-tsla-arma, eval=FALSE, echo=TRUE}
+retornos_tsla <- retornos %>%
+  filter(activo == "TSLA") %>%
+  arrange(fecha)
+
+retornos_tsla %>%
+  select(fecha, activo, retorno_log) %>%
+  slice_head(n = 10)
+```
+
+---
+
+# Retornos de TSLA
+
+```{r tabla-retornos-tsla-arma, echo=FALSE}
+retornos_tsla %>%
+  select(fecha, activo, retorno_log) %>%
+  slice_head(n = 10) %>%
+  mutate(
+    retorno_log = percent(retorno_log, accuracy = 0.01)
+  ) %>%
+  knitr::kable(
+    col.names = c("Fecha", "Activo", "Retorno logarítmico")
+  )
+```
+
+---
+
+# Código para graficar los retornos
+
+```{r codigo-grafico-retornos-tsla-arma, eval=FALSE, echo=TRUE}
+ggplot(retornos_tsla, aes(x = fecha, y = retorno_log)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.5) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retornos logarítmicos diarios de TSLA",
+    subtitle = "Serie de trabajo para el modelo ARMA",
+    x = NULL,
+    y = "Retorno diario"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Retornos logarítmicos diarios de TSLA
+
+```{r grafico-retornos-tsla-arma, echo=FALSE, fig.height=3.5}
+ggplot(retornos_tsla, aes(x = fecha, y = retorno_log)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.5) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retornos logarítmicos diarios de TSLA",
+    subtitle = "Serie de trabajo para el modelo ARMA",
+    x = NULL,
+    y = "Retorno diario"
+  ) +
+  theme_minimal()
+```
+
+---
+
+
+
+# Confirmamos estacionariedad
+
+Antes de ajustar ARMA, podemos volver a revisar la prueba ADF.
+
+```{r codigo-adf-retornos-arma, eval=FALSE, echo=TRUE}
+adf_retorno_tsla <- tseries::adf.test(retornos_tsla$retorno_log)
+
+adf_retorno_tsla
+```
+
+---
+
+# Resultado ADF para retornos
+
+```{r resultado-adf-retornos-arma, echo=FALSE}
+adf_retorno_tsla <- tseries::adf.test(retornos_tsla$retorno_log)
+
+tibble(
+  serie = "Retorno logarítmico de TSLA",
+  estadistico_adf = as.numeric(adf_retorno_tsla$statistic),
+  p_valor = adf_retorno_tsla$p.value
+) %>%
+  mutate(
+    estadistico_adf = round(estadistico_adf, 3),
+    p_valor = round(p_valor, 4),
+    lectura = if_else(
+      p_valor < 0.05,
+      "Evidencia de estacionariedad",
+      "No se rechaza raíz unitaria"
+    )
+  ) %>%
+  knitr::kable(
+    col.names = c("Serie", "Estadístico ADF", "p-valor", "Lectura")
+  )
+```
+
+---
+
+# Lectura de la prueba
+
+Si el p-valor es bajo, tenemos evidencia de que el retorno es estacionario.
+
+<br>
+
+.center[
+## Esto justifica trabajar con ARMA en lugar de ARIMA.
+]
+
+<br>
+
+En términos de notación:
+
+.center[
+## ARMA(p, q) = ARIMA(p, 0, q)
+]
+
+---
+
+# Revisamos ACF y PACF
+
+Antes de ajustar el modelo, miramos la estructura de rezagos.
+
+<br>
+
+La ACF y PACF nos ayudan a preguntarnos:
+
+- ¿hay memoria en los retornos?
+- ¿algún rezago parece importante?
+- ¿tiene sentido incluir términos AR o MA?
+
+---
+
+# Código para ACF de retornos
+
+```{r codigo-acf-retornos-arma, eval=FALSE, echo=TRUE}
+forecast::ggAcf(
+  retornos_tsla$retorno_log,
+  lag.max = 30
+) +
+  labs(
+    title = "ACF de retornos de TSLA",
+    subtitle = "Autocorrelación de retornos logarítmicos diarios",
+    x = "Rezagos",
+    y = "Autocorrelación"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# ACF de retornos de TSLA
+
+```{r acf-retornos-arma, echo=FALSE, fig.height=3.5}
+forecast::ggAcf(
+  retornos_tsla$retorno_log,
+  lag.max = 30
+) +
+  labs(
+    title = "ACF de retornos de TSLA",
+    subtitle = "Autocorrelación de retornos logarítmicos diarios",
+    x = "Rezagos",
+    y = "Autocorrelación"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Código para PACF de retornos
+
+```{r codigo-pacf-retornos-arma, eval=FALSE, echo=TRUE}
+forecast::ggPacf(
+  retornos_tsla$retorno_log,
+  lag.max = 30
+) +
+  labs(
+    title = "PACF de retornos de TSLA",
+    subtitle = "Autocorrelación parcial de retornos logarítmicos diarios",
+    x = "Rezagos",
+    y = "Autocorrelación parcial"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# PACF de retornos de TSLA
+
+```{r pacf-retornos-arma, echo=FALSE, fig.height=3.5}
+forecast::ggPacf(
+  retornos_tsla$retorno_log,
+  lag.max = 30
+) +
+  labs(
+    title = "PACF de retornos de TSLA",
+    subtitle = "Autocorrelación parcial de retornos logarítmicos diarios",
+    x = "Rezagos",
+    y = "Autocorrelación parcial"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura de ACF y PACF
+
+En retornos diarios, muchas veces no aparece una memoria fuerte en media.
+
+<br>
+
+.center[
+## Eso significa que predecir la dirección del retorno es difícil.
+]
+
+<br>
+
+Pero si alguna barra sobresale de las bandas, puede existir alguna dependencia temporal que un ARMA podría capturar.
+
+---
+
+# Modelo base: media constante
+
+Antes de usar ARMA, conviene tener un modelo muy simple.
+
+<br>
+
+.center[
+## retorno esperado = media histórica
+]
+
+<br>
+
+Este modelo no usa rezagos.
+
+Sirve como punto de comparación.
+
+---
+
+# Código para modelo de media constante
+
+```{r codigo-media-constante-arma, eval=FALSE, echo=TRUE}
+media_tsla <- mean(retornos_tsla$retorno_log)
+
+modelo_media_constante <- retornos_tsla %>%
+  mutate(
+    retorno_esperado = media_tsla,
+    residuo = retorno_log - retorno_esperado
+  )
+
+media_tsla
+```
+
+---
+
+# Media diaria estimada
+
+```{r tabla-media-constante-arma, echo=FALSE}
+media_tsla <- mean(retornos_tsla$retorno_log)
+
+tibble(
+  activo = "TSLA",
+  media_diaria = media_tsla
+) %>%
+  mutate(
+    media_diaria = percent(media_diaria, accuracy = 0.001)
+  ) %>%
+  knitr::kable(
+    col.names = c("Activo", "Media diaria")
+  )
+```
+
+---
+
+# Lectura de la media
+
+La media diaria suele ser pequeña.
+
+<br>
+
+.center[
+## En datos diarios, la media rara vez cuenta toda la historia.
+]
+
+<br>
+
+Un activo puede tener media cercana a cero y, aun así, tener pérdidas grandes en días malos.
+
+Por eso necesitamos mirar también los residuos y la volatilidad.
+
+---
+
+# Ajuste automático de ARMA
+
+Ahora usamos `auto.arima()`, pero forzando que no diferencie la serie.
+
+Esto nos deja un modelo ARMA.
+
+```{r codigo-ajuste-arma-auto, eval=FALSE, echo=TRUE}
+modelo_arma_auto <- forecast::auto.arima(
+  retornos_tsla$retorno_log,
+  seasonal = FALSE,
+  stationary = TRUE
+)
+
+modelo_arma_auto
+```
+
+---
+
+# Modelo ARMA seleccionado
+
+```{r modelo-arma-seleccionado, echo=FALSE}
+modelo_arma_auto <- forecast::auto.arima(
+  retornos_tsla$retorno_log,
+  seasonal = FALSE,
+  stationary = TRUE
+)
+
+modelo_arma_auto
+```
+
+---
+
+# ¿Cómo leer el modelo?
+
+El modelo aparecerá como un ARIMA, pero con `d = 0`.
+
+<br>
+
+.center[
+## ARIMA(p, 0, q) = ARMA(p, q)
+]
+
+<br>
+
+.pull-left[
+### p
+
+Rezagos del retorno.
+]
+
+.pull-right[
+### q
+
+Rezagos del error.
+]
+
+<br>
+
+La parte importante es que ya no estamos diferenciando la serie.
+
+---
+
+# Ajuste manual de ARMA
+
+También podemos ajustar una especificación sencilla, por ejemplo ARMA(1,1).
+
+```{r codigo-ajuste-arma-manual, eval=FALSE, echo=TRUE}
+modelo_arma_11 <- forecast::Arima(
+  retornos_tsla$retorno_log,
+  order = c(1, 0, 1),
+  include.mean = TRUE
+)
+
+modelo_arma_11
+```
+
+---
+
+# Modelo ARMA(1,1)
+
+```{r modelo-arma-11, echo=FALSE}
+modelo_arma_11 <- forecast::Arima(
+  retornos_tsla$retorno_log,
+  order = c(1, 0, 1),
+  include.mean = TRUE
+)
+
+modelo_arma_11
+```
+
+---
+
+# Comparación de modelos
+
+Comparamos tres opciones:
+
+- media constante,
+- ARMA automático,
+- ARMA(1,1).
+
+<br>
+
+Para la media constante calculamos el error directamente.
+
+Para los modelos ARMA usamos sus residuos.
+
+---
+
+# Código para comparar modelos
+
+```{r codigo-comparar-modelos-arma, eval=FALSE, echo=TRUE}
+residuos_media <- retornos_tsla$retorno_log - media_tsla
+
+comparacion_modelos_media <- tibble(
+  modelo = c("Media constante", "ARMA automático", "ARMA(1,1)"),
+  RMSE = c(
+    sqrt(mean(residuos_media^2, na.rm = TRUE)),
+    sqrt(mean(residuals(modelo_arma_auto)^2, na.rm = TRUE)),
+    sqrt(mean(residuals(modelo_arma_11)^2, na.rm = TRUE))
+  ),
+  MAE = c(
+    mean(abs(residuos_media), na.rm = TRUE),
+    mean(abs(residuals(modelo_arma_auto)), na.rm = TRUE),
+    mean(abs(residuals(modelo_arma_11)), na.rm = TRUE)
+  ),
+  AIC = c(
+    NA,
+    AIC(modelo_arma_auto),
+    AIC(modelo_arma_11)
+  )
+)
+
+comparacion_modelos_media
+```
+
+---
+
+# Comparación de modelos de media
+
+```{r tabla-comparar-modelos-arma, echo=FALSE}
+residuos_media <- retornos_tsla$retorno_log - media_tsla
+
+comparacion_modelos_media <- tibble(
+  modelo = c("Media constante", "ARMA automático", "ARMA(1,1)"),
+  RMSE = c(
+    sqrt(mean(residuos_media^2, na.rm = TRUE)),
+    sqrt(mean(residuals(modelo_arma_auto)^2, na.rm = TRUE)),
+    sqrt(mean(residuals(modelo_arma_11)^2, na.rm = TRUE))
+  ),
+  MAE = c(
+    mean(abs(residuos_media), na.rm = TRUE),
+    mean(abs(residuals(modelo_arma_auto)), na.rm = TRUE),
+    mean(abs(residuals(modelo_arma_11)), na.rm = TRUE)
+  ),
+  AIC = c(
+    NA,
+    AIC(modelo_arma_auto),
+    AIC(modelo_arma_11)
+  )
+)
+
+comparacion_modelos_media %>%
+  mutate(
+    RMSE = percent(RMSE, accuracy = 0.01),
+    MAE = percent(MAE, accuracy = 0.01),
+    AIC = round(AIC, 2)
+  ) %>%
+  knitr::kable(
+    col.names = c("Modelo", "RMSE", "MAE", "AIC")
+  )
+```
+
+---
+
+# ¿Qué nos dice esta comparación?
+
+El RMSE y el MAE miden error promedio.
+
+<br>
+
+.pull-left[
+### RMSE
+
+Penaliza más los errores grandes.
+
+Es sensible a días extremos.
+]
+
+.pull-right[
+### MAE
+
+Mide el error absoluto promedio.
+
+Es más fácil de interpretar.
+]
+
+<br>
+
+Si ARMA no mejora mucho frente a la media constante, eso nos dice algo importante:
+
+.center[
+## la media de los retornos es difícil de predecir.
+]
+
+---
+
+# Extraemos valores ajustados
+
+El valor ajustado representa la media condicional estimada por el modelo.
+
+<br>
+
+En otras palabras:
+
+.center[
+## lo que el modelo esperaba para cada día.
+]
+
+```{r codigo-valores-ajustados-arma, eval=FALSE, echo=TRUE}
+ajuste_arma <- retornos_tsla %>%
+  mutate(
+    retorno_ajustado = as.numeric(fitted(modelo_arma_auto)),
+    residuo = as.numeric(residuals(modelo_arma_auto))
+  )
+
+ajuste_arma %>%
+  select(fecha, retorno_log, retorno_ajustado, residuo) %>%
+  slice_head(n = 10)
+```
+
+---
+
+# Tabla de valores ajustados
+
+```{r tabla-valores-ajustados-arma, echo=FALSE}
+ajuste_arma <- retornos_tsla %>%
+  mutate(
+    retorno_ajustado = as.numeric(fitted(modelo_arma_auto)),
+    residuo = as.numeric(residuals(modelo_arma_auto))
+  )
+
+ajuste_arma %>%
+  select(fecha, retorno_log, retorno_ajustado, residuo) %>%
+  slice_head(n = 10) %>%
+  mutate(
+    retorno_log = percent(retorno_log, accuracy = 0.01),
+    retorno_ajustado = percent(retorno_ajustado, accuracy = 0.01),
+    residuo = percent(residuo, accuracy = 0.01)
+  ) %>%
+  knitr::kable(
+    col.names = c("Fecha", "Retorno observado", "Retorno ajustado", "Residuo")
+  )
+```
+
+---
+
+# Código para graficar retorno observado y ajustado
+
+```{r codigo-grafico-ajuste-arma, eval=FALSE, echo=TRUE}
+ajuste_arma_largo <- ajuste_arma %>%
+  select(fecha, retorno_log, retorno_ajustado) %>%
+  pivot_longer(
+    cols = c(retorno_log, retorno_ajustado),
+    names_to = "serie",
+    values_to = "valor"
+  )
+
+ggplot(ajuste_arma_largo, aes(x = fecha, y = valor, color = serie)) +
+  geom_line(linewidth = 0.5) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retorno observado vs. retorno ajustado",
+    subtitle = "Modelo ARMA automático para TSLA",
+    x = NULL,
+    y = "Retorno diario"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Retorno observado vs. retorno ajustado
+
+```{r grafico-ajuste-arma, echo=FALSE, fig.height=3.5}
+ajuste_arma_largo <- ajuste_arma %>%
+  select(fecha, retorno_log, retorno_ajustado) %>%
+  pivot_longer(
+    cols = c(retorno_log, retorno_ajustado),
+    names_to = "serie",
+    values_to = "valor"
+  )
+
+ggplot(ajuste_arma_largo, aes(x = fecha, y = valor, color = serie)) +
+  geom_line(linewidth = 0.5) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Retorno observado vs. retorno ajustado",
+    subtitle = "Modelo ARMA automático para TSLA",
+    x = NULL,
+    y = "Retorno diario"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura del ajuste
+
+Es normal que el retorno ajustado sea mucho más suave que el retorno observado.
+
+<br>
+
+.center[
+## El modelo no predice todos los saltos diarios.
+]
+
+<br>
+
+En finanzas, los retornos tienen mucho ruido.
+
+Por eso, la media condicional puede aportar poco frente a la volatilidad condicional.
+
+---
+
+# Residuos del modelo ARMA
+
+Los residuos son la parte del retorno que el modelo no explicó.
+
+<br>
+
+.center[
+## residuo = retorno observado - retorno ajustado
+]
+
+<br>
+
+Si el ARMA capturó bien la dinámica en media, los residuos no deberían tener autocorrelación importante.
+
+---
+
+# Código para graficar residuos ARMA
+
+```{r codigo-residuos-arma, eval=FALSE, echo=TRUE}
+ggplot(ajuste_arma, aes(x = fecha, y = residuo)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.5) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Residuos del modelo ARMA",
+    subtitle = "Lo que el modelo no explicó en la media",
+    x = NULL,
+    y = "Residuo"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Residuos del modelo ARMA
+
+```{r grafico-residuos-arma, echo=FALSE, fig.height=3.5}
+ggplot(ajuste_arma, aes(x = fecha, y = residuo)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 0.5) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Residuos del modelo ARMA",
+    subtitle = "Lo que el modelo no explicó en la media",
+    x = NULL,
+    y = "Residuo"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura de los residuos
+
+Aunque los residuos pueden tener media cercana a cero, no necesariamente tienen varianza constante.
+
+<br>
+
+.pull-left[
+### Lo bueno
+
+El modelo puede eliminar algo de autocorrelación en media.
+]
+
+.pull-right[
+### Lo pendiente
+
+Todavía pueden aparecer periodos de residuos grandes.
+
+Eso apunta hacia volatilidad cambiante.
+]
+
+---
+
+# ACF de residuos ARMA
+
+Revisamos si los residuos todavía tienen memoria lineal.
+
+```{r codigo-acf-residuos-arma, eval=FALSE, echo=TRUE}
+forecast::ggAcf(
+  ajuste_arma$residuo,
+  lag.max = 30
+) +
+  labs(
+    title = "ACF de residuos del modelo ARMA",
+    subtitle = "Revisión de autocorrelación en media",
+    x = "Rezagos",
+    y = "Autocorrelación"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# ACF de residuos del modelo ARMA
+
+```{r acf-residuos-arma, echo=FALSE, fig.height=3.5}
+forecast::ggAcf(
+  ajuste_arma$residuo,
+  lag.max = 30
+) +
+  labs(
+    title = "ACF de residuos del modelo ARMA",
+    subtitle = "Revisión de autocorrelación en media",
+    x = "Rezagos",
+    y = "Autocorrelación"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura de la ACF de residuos
+
+Si las barras están dentro de las bandas, el modelo no dejó mucha memoria lineal.
+
+<br>
+
+.center[
+## Esto sería una buena señal para la parte de media.
+]
+
+<br>
+
+Pero para riesgo financiero falta una pregunta clave:
+
+.center[
+## ¿la volatilidad de los residuos es constante?
+]
+
+---
+
+# Prueba Ljung-Box
+
+La prueba Ljung-Box ayuda a revisar si hay autocorrelación conjunta hasta cierto rezago.
+
+<br>
+
+La hipótesis nula es que no hay autocorrelación.
+
+```{r codigo-ljung-box-arma, eval=FALSE, echo=TRUE}
+prueba_ljung_residuos <- Box.test(
+  ajuste_arma$residuo,
+  lag = 10,
+  type = "Ljung-Box"
+)
+
+prueba_ljung_residuos
+```
+
+---
+
+# Resultado Ljung-Box
+
+```{r tabla-ljung-box-arma, echo=FALSE}
+prueba_ljung_residuos <- Box.test(
+  ajuste_arma$residuo,
+  lag = 10,
+  type = "Ljung-Box"
+)
+
+tibble(
+  prueba = "Ljung-Box sobre residuos",
+  estadistico = as.numeric(prueba_ljung_residuos$statistic),
+  p_valor = prueba_ljung_residuos$p.value
+) %>%
+  mutate(
+    estadistico = round(estadistico, 3),
+    p_valor = round(p_valor, 4),
+    lectura = if_else(
+      p_valor < 0.05,
+      "Hay evidencia de autocorrelación",
+      "No hay evidencia fuerte de autocorrelación"
+    )
+  ) %>%
+  knitr::kable(
+    col.names = c("Prueba", "Estadístico", "p-valor", "Lectura")
+  )
+```
+
+---
+
+# Lectura de Ljung-Box
+
+.pull-left[
+### p-valor bajo
+
+Hay evidencia de autocorrelación.
+
+El modelo podría estar dejando estructura en la media.
+]
+
+.pull-right[
+### p-valor alto
+
+No hay evidencia fuerte de autocorrelación.
+
+La media estaría razonablemente capturada.
+]
+
+<br>
+
+Pero esta prueba mira residuos, no residuos al cuadrado.
+
+---
+
+
+# Pronóstico de retornos con ARMA
+
+También podemos pronosticar retornos futuros.
+
+```{r codigo-pronostico-arma, eval=FALSE, echo=TRUE}
+pronostico_arma <- forecast::forecast(
+  modelo_arma_auto,
+  h = 10
+)
+
+pronostico_arma
+```
+
+---
+
+# Tabla del pronóstico ARMA
+
+```{r tabla-pronostico-arma, echo=FALSE}
+pronostico_arma <- forecast::forecast(
+  modelo_arma_auto,
+  h = 10
+)
+
+tibble(
+  horizonte = 1:10,
+  retorno_esperado = as.numeric(pronostico_arma$mean),
+  limite_inferior_95 = as.numeric(pronostico_arma$lower[, 2]),
+  limite_superior_95 = as.numeric(pronostico_arma$upper[, 2])
+) %>%
+  mutate(
+    retorno_esperado = percent(retorno_esperado, accuracy = 0.01),
+    limite_inferior_95 = percent(limite_inferior_95, accuracy = 0.01),
+    limite_superior_95 = percent(limite_superior_95, accuracy = 0.01)
+  ) %>%
+  knitr::kable(
+    col.names = c("Horizonte", "Retorno esperado", "Límite inferior 95%", "Límite superior 95%")
+  )
+```
+
+---
+
+# Código para graficar el pronóstico ARMA
+
+```{r codigo-grafico-pronostico-arma, eval=FALSE, echo=TRUE}
+autoplot(pronostico_arma) +
+  labs(
+    title = "Pronóstico ARMA de retornos de TSLA",
+    subtitle = "Horizonte de 10 días",
+    x = "Tiempo",
+    y = "Retorno logarítmico"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Pronóstico ARMA de retornos
+
+```{r grafico-pronostico-arma, echo=FALSE, fig.height=3.5}
+autoplot(pronostico_arma) +
+  labs(
+    title = "Pronóstico ARMA de retornos de TSLA",
+    subtitle = "Horizonte de 10 días",
+    x = "Tiempo",
+    y = "Retorno logarítmico"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Lectura del pronóstico
+
+El pronóstico de retorno suele estar cerca de cero.
+
+<br>
+
+.center[
+## Eso no significa que el riesgo sea cero.
+]
+
+<br>
+
+Significa que el modelo no espera una dirección fuerte.
+
+Pero la incertidumbre alrededor de ese retorno puede ser grande.
+
+---
+
+# De retorno esperado a precio esperado
+
+Podemos construir una trayectoria esperada de precio usando el último precio observado.
+
+<br>
+
+La lógica es:
+
+.center[
+## precio futuro = precio actual × exp(retorno acumulado esperado)
+]
+
+<br>
+
+Esto no es una predicción perfecta.
+
+Es solo una forma de traducir retornos esperados a precios esperados.
+
+---
+
+# Código para precio esperado
+
+```{r codigo-precio-esperado-arma, eval=FALSE, echo=TRUE}
+ultimo_precio_tsla <- precios_tsla %>%
+  slice_tail(n = 1) %>%
+  pull(precio)
+
+precio_esperado_arma <- tibble(
+  horizonte = 1:10,
+  retorno_esperado = as.numeric(pronostico_arma$mean)
+) %>%
+  mutate(
+    retorno_acumulado = cumsum(retorno_esperado),
+    precio_esperado = ultimo_precio_tsla * exp(retorno_acumulado)
+  )
+
+precio_esperado_arma
+```
+
+---
+
+# Tabla de precio esperado
+
+```{r tabla-precio-esperado-arma, echo=FALSE}
+ultimo_precio_tsla <- precios_tsla %>%
+  slice_tail(n = 1) %>%
+  pull(precio)
+
+precio_esperado_arma <- tibble(
+  horizonte = 1:10,
+  retorno_esperado = as.numeric(pronostico_arma$mean)
+) %>%
+  mutate(
+    retorno_acumulado = cumsum(retorno_esperado),
+    precio_esperado = ultimo_precio_tsla * exp(retorno_acumulado)
+  )
+
+precio_esperado_arma %>%
+  mutate(
+    retorno_esperado = percent(retorno_esperado, accuracy = 0.01),
+    retorno_acumulado = percent(retorno_acumulado, accuracy = 0.01),
+    precio_esperado = dollar(precio_esperado, accuracy = 0.01)
+  ) %>%
+  knitr::kable(
+    col.names = c("Horizonte", "Retorno esperado", "Retorno acumulado", "Precio esperado")
+  )
+```
+
+---
+
+# Código para graficar precio esperado
+
+```{r codigo-grafico-precio-esperado-arma, eval=FALSE, echo=TRUE}
+ggplot(precio_esperado_arma, aes(x = horizonte, y = precio_esperado)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2) +
+  scale_y_continuous(labels = dollar_format()) +
+  labs(
+    title = "Precio esperado a partir del modelo ARMA",
+    subtitle = "Conversión de retornos esperados acumulados",
+    x = "Días hacia adelante",
+    y = "Precio esperado"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Precio esperado a partir de ARMA
+
+```{r grafico-precio-esperado-arma, echo=FALSE, fig.height=3.5}
+ggplot(precio_esperado_arma, aes(x = horizonte, y = precio_esperado)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2) +
+  scale_y_continuous(labels = dollar_format()) +
+  labs(
+    title = "Precio esperado a partir del modelo ARMA",
+    subtitle = "Conversión de retornos esperados acumulados",
+    x = "Días hacia adelante",
+    y = "Precio esperado"
+  ) +
+  theme_minimal()
+```
+
+---
+
+# Cuidado con esta lectura
+
+El precio esperado puede verse estable.
+
+Pero eso no quiere decir que el activo sea estable.
+
+<br>
+
+.center[
+## El camino esperado no muestra los malos escenarios.
+]
+
+<br>
+
+Para gestión de riesgos nos interesa algo más:
+
+.center[
+## ¿cuánto podría perder si el retorno cae mucho?
+]
+
+<br>
+
+Eso nos lleva al VaR.
+
+---
+
+# ARMA y riesgo
+
+ARMA puede ayudar a estimar la media condicional del retorno.
+
+Pero el VaR necesita algo más:
+
+<br>
+
+.pull-left[
+### Media condicional
+
+¿Qué retorno espero?
+]
+
+.pull-right[
+### Volatilidad condicional
+
+¿Qué tan incierto es ese retorno?
+]
+
+<br>
+
+.center[
+Sin volatilidad condicional, el riesgo queda incompleto.
+]
+
+---
+
+
+
+
+class: inverse, center, middle
+
+# Discusión
+
+## Pronósticos
+
+
+
+---
+
+# Una duda muy normal
+
+Después de ajustar un ARIMA, muchas veces pasa esto:
+
+<br>
+
+.center[
+### el pronóstico sale casi plano
+]
+
+o
+
+.center[
+### parece una línea recta con una leve pendiente
+]
+
+<br>
+
+Y ahí uno piensa:
+
+.center[
+### “¿entonces esto sí sirve?”
+]
+
+.orange[Sí sirve, pero hay que entender **qué está diciendo** el modelo.]
+
+---
+
+# ¿Por qué el pronóstico se ve casi constante?
+
+Porque en muchas series financieras el modelo encuentra muy poca estructura predecible.
+
+<br>
+
+.pull-left[
+### En retornos
+
+La media suele estar muy cerca de cero.
+
+Además, la autocorrelación suele ser baja.
+
+Por eso el mejor pronóstico muchas veces es:
+
+.center[
+.green[**un retorno esperado muy pequeño**]
+]
+]
+
+.pull-right[
+### En precios
+
+Si el modelo se parece a un camino aleatorio o a un ARIMA(0,1,0) con drift, el pronóstico sigue el último nivel observado más una deriva promedio.
+
+Por eso aparece una trayectoria casi lineal.
+]
+
+---
+
+# Lo que ARIMA está diciendo de verdad
+
+Cuando un ARIMA produce una línea casi plana, no necesariamente está fallando.
+
+Muchas veces está diciendo algo muy importante:
+
+<br>
+
+.center[
+## “no encuentro evidencia fuerte para predecir giros complejos en esta serie”
+]
+
+<br>
+
+Eso, en finanzas, es totalmente razonable.
+
+En acciones, predecir con precisión la dirección futura del precio suele ser muy difícil.
+
+---
+
+# En retornos: ¿por qué casi siempre sale cerca de cero?
+
+Porque los retornos diarios suelen comportarse como fluctuaciones alrededor de una media pequeña.
+
+<br>
+
+.center[
+## retorno esperado ≈ pequeño
+]
+
+<br>
+
+Entonces, aunque la serie suba y baje mucho, el modelo en media puede decir:
+
+.center[
+## “en promedio, espero algo cercano a cero”
+]
+
+<br>
+
+Eso no significa que no haya riesgo.
+
+Significa que **la media** no es tan informativa.
+
+---
+
+# En precios: ¿por qué sale una línea recta?
+
+Si el modelo seleccionado fue algo como:
+
+.center[
+## ARIMA(0,1,0) with drift
+]
+
+entonces el pronóstico se parece a:
+
+- tomar el último valor observado,
+- sumarle una tendencia promedio,
+- repetir eso hacia adelante.
+
+<br>
+
+Por eso el gráfico suele verse como una línea suave o casi lineal.
+
+No está “adivinando” saltos futuros.
+
+Está proyectando la trayectoria promedio implícita en el modelo.
+
+---
+
+# Entonces, ¿ARIMA no sirve a largo plazo?
+
+Sirve, pero con límites claros.
+
+<br>
+
+.pull-left[
+### Sí sirve para
+
+- construir una línea base,
+- hacer un pronóstico corto y prudente,
+- comparar activos o modelos,
+- entender la inercia de la serie,
+- mostrar la incertidumbre del pronóstico.
+]
+
+.pull-right[
+### Se queda corto para
+
+- anticipar cambios bruscos,
+- capturar noticias inesperadas,
+- describir volatilidad cambiante,
+- pronosticar con mucha precisión a largo plazo.
+]
+
+<br>
+
+.center[
+## En horizontes largos, la incertidumbre crece y el pronóstico central pierde valor práctico.
+]
+
+---
+
+# Lo más importante no es la línea central
+
+En series financieras, muchas veces el centro del pronóstico no es lo más útil.
+
+<br>
+
+.center[
+### Lo más útil son las bandas de incertidumbre.
+]
+
+
+¿Por qué?
+
+Porque el mensaje no es solo:
+
+.center[
+### “¿cuál precio espero?”
+]
+
+sino también:
+
+.center[
+### “¿con qué incertidumbre estoy haciendo esa proyección?”
+]
+
+.orange[Eso conecta directamente con riesgo financiero.]
+
+---
+
+# Una lectura honesta del ARIMA
+
+Si el pronóstico sale casi plano, una lectura madura sería:
+
+<br>
+
+.center[
+## el modelo no encuentra suficiente señal para predecir una trayectoria muy distinta del nivel actual o de una tendencia promedio pequeña
+]
+
+<br>
+
+Y eso es mejor que forzar un modelo que invente patrones que realmente no existen.
+
+---
+
+# ¿Entonces para qué me quedo con ARIMA?
+
+Quédate con ARIMA como:
+
+<br>
+
+1. un modelo base,
+2. una forma de entender la dinámica temporal,
+3. una herramienta de pronóstico corto,
+4. un punto de comparación frente a modelos más sofisticados.
+
+<br>
+
+.center[
+## ARIMA no es el final del análisis.
+]
+
+.center[
+## Es un muy buen punto de partida.
+]
+
+---
+
+# Otra duda clave
+
+.center[
+## Si quiero pronosticar el precio de una acción,  
+## ¿tengo que usar obligatoriamente log(precio)?
+]
+
+<br>
+
+La respuesta es:
+
+.center[
+## no, no es obligatorio.
+]
+
+<br>
+
+Pero muchas veces sí es conveniente.
+
+---
+
+# Puedo modelar en precio o en log-precio
+
+Tienes varias opciones.
+
+<br>
+
+.pull-left[
+### Opción 1: precio en niveles
+
+Trabajas directamente con el precio.
+
+Es más intuitivo porque todo queda en la escala original.
+]
+
+.pull-right[
+### Opción 2: log-precio
+
+Trabajas con el logaritmo del precio.
+
+Luego, si quieres, conviertes el pronóstico de vuelta a precio usando exponencial.
+]
+
+<br>
+
+Ambas rutas son válidas.
+
+La elección depende del objetivo y del comportamiento de la serie.
+
+---
+
+# ¿Cuándo conviene usar log-precio?
+
+El log-precio suele ser útil cuando:
+
+- el precio siempre es positivo,
+- quieres interpretar cambios como variaciones relativas,
+- buscas una serie más cómoda para modelar.
+
+<br>
+
+.center[
+## Además, la primera diferencia del log-precio es el retorno logarítmico.
+]
+
+<br>
+
+Eso hace muy natural la conexión entre precios y retornos.
+
+---
+
+# ¿Cuándo podría trabajar en precio directo?
+
+Trabajar en precio directo puede ser útil cuando:
+
+- quieres mantener la interpretación totalmente en pesos o dólares,
+- el horizonte es corto y la escala original te interesa más,
+- el comportamiento de la serie no cambia mucho en magnitud,
+- buscas una explicación más intuitiva.
+
+<br>
+
+.center[
+## O sea: sí se puede trabajar en niveles.
+]
+
+---
+
+# Entonces, ¿qué prefiero en esta clase?
+
+Para esta clase, usar `log(precio)` tiene varias ventajas:
+
+<br>
+
+.pull-left[
+### Ventaja 1
+
+Hace más natural hablar de diferenciación.
+]
+
+.pull-right[
+### Ventaja 2
+
+Conecta directamente con retornos.
+]
+
+.pull-left[
+### Ventaja 3
+
+Permite una transición más limpia hacia riesgo financiero.
+]
+
+.pull-right[
+### Ventaja 4
+
+Es una práctica muy común en series financieras.
+]
+
+
+
+
+---
+
+
+class: inverse, center, middle
+background-color: #122140
+
+.pull-left[
+
+.center[
+<br><br>
+
+# Gracias!!!
+
+<br>
+
+
+
+### ¿Preguntas?
+
+<br>
+
+
+```{r qr, echo=FALSE, fig.align="center", out.width="49%"}
+knitr::include_graphics("img/qr-code.png")
+```
+
+]
+]
+
+
+.pull-right[
+
+<br> 
+<br> 
+<img style="border-radius: 50%;" src="img/avatar.png"
+width="150px"
+/>
+
+### [www.joaquibarandica.com](https://www.joaquibarandica.com)
+
+`r icon("envelope")` orlando.joaqui@correounivalle.edu.co
+
+<img src="img/Logo.jpg" width="120%">
+
+]
+
+
+<br><br><br>
+
+
+
+
